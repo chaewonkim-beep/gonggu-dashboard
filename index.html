@@ -57,18 +57,7 @@ body {
 }
 #app-header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
 #header-date { font-size: 13px; opacity: 0.85; }
-#header-urgent {
-  background: var(--orange);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  animation: pulse 1.8s infinite;
-  display: none;
-}
-#header-urgent.show { display: inline-block; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
 
 /* ─── 메인 레이아웃 ─── */
 #app-body { display: flex; flex: 1; min-height: 0; }
@@ -118,7 +107,7 @@ body {
 .badge-red    { background: var(--red-light);    color: var(--red); }
 .badge-green  { background: var(--green-light);  color: #2E7D32; }
 .badge-gray   { background: var(--gray-light);   color: var(--gray); }
-.badge-urgent { background: var(--red);          color: #fff; }
+.badge-green  { background: var(--green-light);  color: #2E7D32; font-weight: 700; }
 
 /* ─── 버튼 ─── */
 .btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
@@ -144,11 +133,7 @@ select, input[type="text"], textarea {
 select:focus, input[type="text"]:focus, textarea:focus { border-color: var(--yellow); }
 textarea { resize: vertical; min-height: 60px; }
 
-/* ─── 긴급/일반 토글 ─── */
-.toggle-group { display: flex; border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-.toggle-group button { flex: 1; padding: 8px 12px; border: none; background: var(--cream); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-light); font-family: inherit; transition: all 0.15s; }
-.toggle-group button.sel-urgent { background: var(--red); color: #fff; font-weight: 700; }
-.toggle-group button.sel-normal { background: var(--yellow-light); color: var(--brown); font-weight: 700; }
+
 
 /* ─── 토스트 ─── */
 #toast { position: fixed; bottom: 28px; right: 28px; background: var(--brown); color: #fff; padding: 12px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s; }
@@ -176,12 +161,34 @@ textarea { resize: vertical; min-height: 60px; }
 .cal-header button { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--brown); padding: 4px 8px; border-radius: 6px; }
 .cal-header button:hover { background: var(--brown-light); }
 .cal-month { font-size: 15px; font-weight: 700; color: var(--brown); }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.cal-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-light); padding: 4px 0; }
-.cal-day { text-align: center; padding: 5px 2px; font-size: 12px; cursor: pointer; border-radius: 6px; position: relative; color: var(--text-dark); }
-.cal-day:hover { background: var(--cream2); }
+.cal-grid { display: block; }
+.cal-week { display: flex; margin-bottom: 2px; }
+.cal-dow { flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-light); padding: 4px 0; }
+.cal-day { flex: 1; text-align: center; padding: 6px 2px; font-size: 12px; cursor: default; border-radius: 6px; color: var(--text-dark); }
+.cal-day:not(.range-fill):hover { background: var(--cream2); }
+.cal-day.range-fill { background: var(--orange-light); border-radius: 0; cursor: pointer; }
+.cal-day.range-fill:hover { background: #FDDBB0; }
+.cal-day.range-fill.range-start { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.cal-day.range-fill.range-end   { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+/* ─── 캘린더 팝업 ─── */
+#cal-popup-overlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(61,43,31,0.25); }
+#cal-popup {
+  display:none; position:fixed; z-index:201;
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  background:#fff; border-radius:var(--radius); padding:22px;
+  min-width:300px; max-width:400px; width:90%;
+  box-shadow:0 8px 32px rgba(123,92,62,0.22); border:1px solid var(--border);
+  max-height:80vh; overflow-y:auto;
+}
+.cal-popup-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.cal-popup-date { font-size:16px; font-weight:700; color:var(--brown); }
+.cal-popup-close { background:none; border:none; cursor:pointer; font-size:20px; color:var(--text-light); line-height:1; padding:0 2px; }
+.cal-popup-close:hover { color:var(--brown); }
+.cal-popup-event { padding:12px; background:var(--cream); border-radius:var(--radius-sm); margin-bottom:8px; border:1px solid var(--border); }
+.cal-popup-event:last-child { margin-bottom:0; }
 .cal-day.today { background: var(--yellow); color: var(--brown); font-weight: 700; }
-.cal-day.has-event::after { content: ''; display: block; width: 4px; height: 4px; background: var(--orange); border-radius: 50%; margin: 2px auto 0; }
+.cal-day.has-event:not(.today) { background: var(--orange-light); }
 .cal-day.other-month { color: var(--text-light); }
 .cal-day.sunday { color: var(--red); }
 .cal-day.saturday { color: #5080C0; }
@@ -230,7 +237,6 @@ textarea { resize: vertical; min-height: 60px; }
 .filter-btn.active { background: var(--yellow-light); border-color: var(--yellow); color: var(--brown); }
 .task-list { display: flex; flex-direction: column; gap: 8px; }
 .task-item { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; box-shadow: var(--shadow); transition: opacity 0.2s; }
-.task-item.urgent { border-left: 3px solid var(--red); background: #FFFAFA; }
 .task-item.done-item { opacity: 0.55; }
 .task-item.archived-item { opacity: 0.4; background: var(--gray-light); }
 .task-item input[type="checkbox"] { accent-color: var(--brown); width: 16px; height: 16px; flex-shrink: 0; }
@@ -280,14 +286,14 @@ textarea { resize: vertical; min-height: 60px; }
 <header id="app-header">
   <h1>달콤수학 공구 관리</h1>
   <div id="header-date"></div>
-  <div id="header-urgent">오늘 일정 있음</div>
 </header>
 
 <div id="app-body">
   <nav id="sidebar">
     <div class="nav-item active" data-section="today"><span class="nav-icon">📋</span><span>오늘 확인</span></div>
     <div class="nav-item" data-section="schedule"><span class="nav-icon">📅</span><span>공구 일정</span></div>
-    <div class="nav-item" data-section="vendors"><span class="nav-icon">🏪</span><span>공구사 현황</span></div>
+    <div class="nav-item" data-section="gonggu"><span class="nav-icon">📊</span><span>공구 현황</span></div>
+    <div class="nav-item" data-section="vendorhist"><span class="nav-icon">🏪</span><span>공구사 현황</span></div>
     <div class="nav-item" data-section="tasks"><span class="nav-icon">✅</span><span>할 일</span></div>
     <div class="nav-item" data-section="comms"><span class="nav-icon">💬</span><span>소통 기록</span></div>
   </nav>
@@ -297,6 +303,7 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ① 오늘 확인 -->
     <section id="section-today" class="section active">
       <div class="section-title">📋 오늘 확인</div>
+      <div id="today-gonggu-bar"></div>
       <div class="today-grid">
         <div class="today-zone zone-today">
           <div class="today-zone-title">오늘 처리</div>
@@ -307,7 +314,7 @@ textarea { resize: vertical; min-height: 60px; }
           <div id="zone-week-list"></div>
         </div>
         <div class="today-zone zone-issue">
-          <div class="today-zone-title">공구사 이슈</div>
+          <div class="today-zone-title">최근 소통</div>
           <div id="zone-issue-list"></div>
         </div>
       </div>
@@ -316,26 +323,55 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ② 공구 일정 -->
     <section id="section-schedule" class="section">
       <div class="section-title">📅 공구 일정</div>
-      <div class="schedule-layout">
-        <div>
-          <div class="calendar-card">
-            <div class="cal-header">
-              <button id="cal-prev">‹</button>
-              <div class="cal-month" id="cal-month-label"></div>
-              <button id="cal-next">›</button>
-            </div>
-            <div class="cal-grid" id="cal-grid"></div>
+      <div class="task-add-form" style="margin-bottom:20px">
+        <h3>일정 추가</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>공구사</label>
+            <select id="event-vendor"></select>
+          </div>
+          <div class="form-group">
+            <label>시작 날짜</label>
+            <input type="text" id="event-startdate" placeholder="YYYY-MM-DD">
+          </div>
+          <div class="form-group">
+            <label>종료 날짜 (선택)</label>
+            <input type="text" id="event-enddate" placeholder="YYYY-MM-DD">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>일정 제목</label>
+            <input type="text" id="event-title" placeholder="예: 낼나 타임타이머 공구">
+          </div>
+          <div class="form-group" style="justify-content:flex-end">
+            <label style="visibility:hidden">버튼</label>
+            <button class="btn btn-primary" id="btn-add-event">추가</button>
           </div>
         </div>
-        <div class="event-list" id="event-list"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start">
+        <div class="calendar-card">
+          <div class="cal-header">
+            <button id="cal-prev">‹</button>
+            <div class="cal-month" id="cal-month-label"></div>
+            <button id="cal-next">›</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div id="event-bars"></div>
       </div>
     </section>
 
-    <!-- ③ 공구사 현황 -->
-    <section id="section-vendors" class="section">
-      <div class="section-title">🏪 공구사별 현황</div>
-      <div class="vendor-grid" id="vendor-grid"></div>
-      <div id="vendor-detail-panel"></div>
+    <!-- ③ 공구 현황 (공구별 단계 관리) -->
+    <section id="section-gonggu" class="section">
+      <div class="section-title">📊 공구 현황</div>
+      <div class="vendor-grid" id="gonggu-grid"></div>
+      <div id="gonggu-detail-panel" class="card" style="display:none;margin-top:20px;border:1.5px solid var(--orange)"></div>
+    </section>
+
+    <!-- ④ 공구사 현황 (누적 이력) -->
+    <section id="section-vendorhist" class="section">
+      <div class="section-title">🏪 공구사 현황</div>
+      <div id="vendor-hist-list"></div>
     </section>
 
     <!-- ④ 할 일 -->
@@ -353,14 +389,19 @@ textarea { resize: vertical; min-height: 60px; }
             <select id="task-event"><option value="">없음</option></select>
           </div>
           <div class="form-group">
-            <label>긴급 여부</label>
-            <div class="toggle-group">
-              <button id="toggle-urgent" class="sel-urgent">긴급</button>
-              <button id="toggle-normal">일반</button>
-            </div>
+            <label>담당자</label>
+            <select id="task-assignee">
+              <option value="">없음</option>
+              <option value="김채원">김채원</option>
+              <option value="대표님">대표님</option>
+            </select>
           </div>
         </div>
         <div class="form-row">
+          <div class="form-group">
+            <label>날짜</label>
+            <input type="text" id="task-date" placeholder="YYYY-MM-DD">
+          </div>
           <div class="form-group" style="flex:1">
             <label>내용</label>
             <input type="text" id="task-content" placeholder="할 일 내용 입력 후 Enter 또는 추가 버튼">
@@ -392,50 +433,69 @@ textarea { resize: vertical; min-height: 60px; }
           <div class="form-group">
             <label>유형</label>
             <select id="comm-type">
-              <option value="확인">확인</option>
+              <option value="일정">일정</option>
+              <option value="품목">품목</option>
               <option value="이슈">이슈</option>
-              <option value="할일">할일</option>
-              <option value="완료">완료</option>
-              <option value="정보">정보</option>
             </select>
           </div>
           <div class="form-group">
             <label>연결 일정 (선택)</label>
             <select id="comm-event"><option value="">없음</option></select>
           </div>
+          <div class="form-group">
+            <label>날짜</label>
+            <input type="text" id="comm-date" placeholder="YYYY-MM-DD">
+          </div>
         </div>
         <div class="form-group" style="margin-bottom:10px">
           <label>내용</label>
           <textarea id="comm-content" placeholder="소통 내용을 입력하세요"></textarea>
         </div>
-        <label class="checkbox-label" style="margin-bottom:10px">
-          <input type="checkbox" id="comm-followup-check">
-          후속 할 일 만들기
-        </label>
-        <div id="followup-section" class="followup-section">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+          <label class="checkbox-label">
+            <input type="checkbox" id="comm-followup-check">
+            후속 할 일 만들기
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="comm-newevent-check">
+            공구 일정 등록
+          </label>
+        </div>
+        <div id="followup-section" class="followup-section" style="margin-bottom:8px">
           <div class="followup-label">후속 할 일 내용</div>
           <div class="form-row">
             <div class="form-group" style="flex:1">
               <input type="text" id="followup-content" placeholder="후속 할 일 내용">
             </div>
+          </div>
+        </div>
+        <div id="newevent-section" class="followup-section" style="margin-bottom:8px">
+          <div class="followup-label">새 공구 일정</div>
+          <div class="form-row">
             <div class="form-group">
-              <label>긴급 여부</label>
-              <div class="toggle-group">
-                <button id="followup-urgent-btn">긴급</button>
-                <button id="followup-normal-btn" class="sel-normal">일반</button>
-              </div>
+              <label>시작 날짜</label>
+              <input type="text" id="newevent-date" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group">
+              <label>종료 날짜 (선택)</label>
+              <input type="text" id="newevent-enddate" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label>일정 제목</label>
+              <input type="text" id="newevent-title" placeholder="예: 낼나 타임타이머 공구">
             </div>
           </div>
         </div>
         <button class="btn btn-primary" id="btn-add-comm" style="margin-top:4px">저장</button>
       </div>
+      <div style="margin-bottom:8px">
+        <input type="text" id="comm-search" placeholder="내용 또는 공구사 검색" style="width:100%;max-width:320px">
+      </div>
       <div class="comm-filters">
         <button class="filter-btn active" data-type="all">전체</button>
+        <button class="filter-btn" data-type="일정">일정</button>
+        <button class="filter-btn" data-type="품목">품목</button>
         <button class="filter-btn" data-type="이슈">이슈</button>
-        <button class="filter-btn" data-type="할일">할일</button>
-        <button class="filter-btn" data-type="완료">완료</button>
-        <button class="filter-btn" data-type="확인">확인</button>
-        <button class="filter-btn" data-type="정보">정보</button>
       </div>
       <div class="comm-feed" id="comm-feed"></div>
     </section>
@@ -445,52 +505,58 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div id="toast"></div>
 
+<!-- 캘린더 날짜 팝업 -->
+<div id="cal-popup-overlay" onclick="closeCalPopup()"></div>
+<div id="cal-popup">
+  <div class="cal-popup-header">
+    <div class="cal-popup-date" id="cal-popup-date"></div>
+    <button class="cal-popup-close" onclick="closeCalPopup()">✕</button>
+  </div>
+  <div id="cal-popup-body"></div>
+</div>
+
 <script>
 // ══════════════ 기본 데이터 (최종 업데이트: 2026-06-19) ══════════════
 const DEFAULT_VENDORS = [
   { id: 'navita',   name: '나비타',      paused: true  }, // 당분간 진행 보류
   { id: 'chilgeun', name: '칠진사',      paused: false },
   { id: 'naelna',   name: '낼나',        paused: false },
-  { id: 'baobab',   name: '바오밥',      paused: false },
+  { id: 'baobab',   name: '행복한 바오밥', paused: false },
   { id: 'jnj',      name: '제이앤제이',  paused: false },
-  { id: 'kreta',    name: '칼타공기',    paused: false }, // 신규
-  { id: 'ilpro',    name: '일프로 연산', paused: false }, // 신규
+  { id: 'kreta',    name: '칼타공기',    paused: false },
+  { id: 'ilpro',    name: '일프로 연산', paused: false },
+  { id: 'gabefam',  name: '가베가족',   paused: false },
 ];
 const DEFAULT_EVENTS = [
-  // ─ 바오밥 ─
-  { id: 'evt-001', vendorId: 'baobab',   date: '2026-06-15', title: '바오밥 공구 오픈' },
-  { id: 'evt-006', vendorId: 'baobab',   date: '2026-06-19', title: '바오밥 기대평 이벤트 발표' },
-  { id: 'evt-007', vendorId: 'baobab',   date: '2026-06-22', title: '바오밥 기대평 이벤트 마감' },
+  // ─ 행복한 바오밥 ─
+  { id: 'evt-001', vendorId: 'baobab',   startDate: '2026-06-15', endDate: '2026-06-22', title: '셈셈 보드게임' },
   // ─ 칠진사 ─
-  { id: 'evt-002', vendorId: 'chilgeun', date: '2026-07-29', title: '칠진사 공구' },
-  // ─ 제이앤제이 (소마셈·팩토 이동) ─
-  { id: 'evt-003', vendorId: 'jnj',      date: '2026-07-03', title: '제이앤제이 팩토 공구' },
-  { id: 'evt-004', vendorId: 'jnj',      date: '2026-07-16', title: '제이앤제이 비상 공구' },
-  // ─ 낼나 ─
-  { id: 'evt-008', vendorId: 'naelna',   date: '2026-07-10', title: '낼나 타임타이머 공구 시작' },
-  { id: 'evt-009', vendorId: 'naelna',   date: '2026-07-14', title: '낼나 타임타이머 공구 종료' },
-  // ─ 칼타공기 ─
-  { id: 'evt-010', vendorId: 'kreta',    date: '2026-07-20', title: '칼타공기 공구 시작' },
-  { id: 'evt-011', vendorId: 'kreta',    date: '2026-07-24', title: '칼타공기 공구 종료' },
-  // ─ 일프로 연산 ─
-  { id: 'evt-012', vendorId: 'ilpro',    date: '2026-09-29', title: '일프로 연산 공구 시작' },
-  { id: 'evt-013', vendorId: 'ilpro',    date: '2026-10-05', title: '일프로 연산 공구 종료' },
+  { id: 'evt-002', vendorId: 'chilgeun', startDate: '2026-07-29', endDate: null,         title: '칠진사 공구' },
+  // ─ 제이앤제이 ─
+  { id: 'evt-003', vendorId: 'jnj',      startDate: '2026-07-03', endDate: null,         title: '제이앤제이 팩토 공구' },
+  { id: 'evt-004', vendorId: 'jnj',      startDate: '2026-08-26', endDate: '2026-08-30', title: '제이앤제이 비상 공구' },
+  // ─ 낼나 (범위) ─
+  { id: 'evt-008', vendorId: 'naelna',   startDate: '2026-07-10', endDate: '2026-07-14', title: '낼나 타임타이머 공구' },
+  // ─ 칼타공기 (범위) ─
+  { id: 'evt-010', vendorId: 'kreta',    startDate: '2026-08-20', endDate: '2026-08-24', title: '칼타공기 공구' },
+  // ─ 일프로 연산 (범위) ─
+  { id: 'evt-012', vendorId: 'ilpro',    startDate: '2026-09-29', endDate: '2026-10-05', title: '일프로 연산 공구' },
 ];
 const DEFAULT_TASKS = [
   // 칠진사 ─ 미팅 완료, 콘텐츠팀 전달 남음
-  { id: 't-001', vendorId: 'chilgeun', eventId: 'evt-002', content: '칠진사 미팅 준비',              urgent: true,  done: true,  archived: false, isDefault: true, createdAt: '2026-06-10', followUpFromCommId: 'c-002' },
-  { id: 't-006', vendorId: 'chilgeun', eventId: 'evt-002', content: '콘텐츠팀에 칠진사 공구 내용 전달', urgent: true,  done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: 'c-006' },
+  { id: 't-001', vendorId: 'chilgeun', eventId: 'evt-002', content: '칠진사 미팅 준비',              done: true,  archived: false, isDefault: true, createdAt: '2026-06-10', followUpFromCommId: 'c-002' },
+  { id: 't-006', vendorId: 'chilgeun', eventId: 'evt-002', content: '콘텐츠팀에 칠진사 공구 내용 전달', done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: 'c-006' },
   // 낼나 ─ 일정 확정, 목록 확인 남음
-  { id: 't-002', vendorId: 'naelna',   eventId: null,      content: '낼나 메일 답변',                urgent: false, done: true,  archived: false, isDefault: true, createdAt: '2026-06-11', followUpFromCommId: null },
-  { id: 't-007', vendorId: 'naelna',   eventId: 'evt-008', content: '낼나 체험단 목록 확인',           urgent: false, done: true,  archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: 'c-007' },
-  { id: 't-010', vendorId: 'naelna',   eventId: 'evt-008', content: '낼나 공구 목록 확인 (이번 주 내 미수신 시 메일 발송)', urgent: false, done: false, archived: false, isDefault: true, createdAt: '2026-06-19', followUpFromCommId: 'c-013' },
+  { id: 't-002', vendorId: 'naelna',   eventId: null,      content: '낼나 메일 답변',                done: true,  archived: false, isDefault: true, createdAt: '2026-06-11', followUpFromCommId: null },
+  { id: 't-007', vendorId: 'naelna',   eventId: 'evt-008', content: '낼나 체험단 목록 확인',           done: true,  archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: 'c-007' },
+  { id: 't-010', vendorId: 'naelna',   eventId: 'evt-008', content: '낼나 공구 목록 확인 (이번 주 내 미수신 시 메일 발송)', done: false, archived: false, isDefault: true, createdAt: '2026-06-19', followUpFromCommId: 'c-013' },
   // 바오밥 ─ 기대평 이벤트 진행
-  { id: 't-003', vendorId: 'baobab',   eventId: 'evt-001', content: '바오밥 오픈 최종 확인',           urgent: true,  done: true,  archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: 'c-004' },
-  { id: 't-004', vendorId: 'baobab',   eventId: 'evt-001', content: '오픈 링크 공유',                 urgent: false, done: true,  archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: null },
-  { id: 't-008', vendorId: 'baobab',   eventId: 'evt-006', content: '기대평 이벤트 발표 진행',         urgent: true,  done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: null },
-  { id: 't-009', vendorId: 'baobab',   eventId: 'evt-007', content: '기대평 이벤트 마감 처리',         urgent: false, done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: null },
+  { id: 't-003', vendorId: 'baobab',   eventId: 'evt-001', content: '바오밥 오픈 최종 확인',           done: true,  archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: 'c-004' },
+  { id: 't-004', vendorId: 'baobab',   eventId: 'evt-001', content: '오픈 링크 공유',                 done: true,  archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: null },
+  { id: 't-008', vendorId: 'baobab',   eventId: 'evt-001', content: '기대평 이벤트 발표 진행',         done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: null },
+  { id: 't-009', vendorId: 'baobab',   eventId: 'evt-001', content: '기대평 이벤트 마감 처리',         done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: null },
   // JNJ ─ 협의 완료 (팩토·비상 일정 확정)
-  { id: 't-005', vendorId: 'jnj',      eventId: null,      content: '제이앤제이 신규 상품 협의',       urgent: false, done: true,  archived: false, isDefault: true, createdAt: '2026-06-08', followUpFromCommId: null },
+  { id: 't-005', vendorId: 'jnj',      eventId: null,      content: '제이앤제이 신규 상품 협의',       done: true,  archived: false, isDefault: true, createdAt: '2026-06-08', followUpFromCommId: null },
 ];
 const DEFAULT_COMMS = [
   // 2026-06-18 최신 업데이트
@@ -501,7 +567,7 @@ const DEFAULT_COMMS = [
   { id: 'c-005', vendorId: 'navita',   eventId: null,      date: '2026-06-18', type: '정보', content: '당분간 공구 진행 않기로 답변 받음. 추후 재연락 예정',                        followUpTaskId: null },
   { id: 'c-006', vendorId: 'chilgeun', eventId: 'evt-002', date: '2026-06-18', type: '확인', content: '공구 일정·품목 확정 완료. 콘텐츠팀에 내용 전달 필요',                       followUpTaskId: 't-006' },
   { id: 'c-007', vendorId: 'naelna',   eventId: 'evt-008', date: '2026-06-18', type: '확인', content: '타임타이머 공구 일정 확정 (7/10~7/14). 체험단 목록 확인만 남음',           followUpTaskId: 't-007' },
-  { id: 'c-008', vendorId: 'baobab',   eventId: 'evt-006', date: '2026-06-18', type: '확인', content: '체험단 이벤트 진행 중. 내일(6/19) 기대평 이벤트 발표, 월요일(6/22) 마감 예정', followUpTaskId: null },
+  { id: 'c-008', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-18', type: '확인', content: '체험단 이벤트 진행 중. 내일(6/19) 기대평 이벤트 발표, 월요일(6/22) 마감 예정', followUpTaskId: null },
   { id: 'c-009', vendorId: 'jnj',      eventId: null,      date: '2026-06-18', type: '정보', content: '당분간 연락할 내용 없음. 일정 확정 후 연락 예정',                           followUpTaskId: null },
   { id: 'c-012', vendorId: 'jnj',      eventId: 'evt-003', date: '2026-06-18', type: '확인', content: '소마셈·팩토 품목 확정. 7/3 팩토 공구, 7/16 비상 공구 일정 확정',             followUpTaskId: null },
   { id: 'c-010', vendorId: 'kreta',    eventId: 'evt-010', date: '2026-06-18', type: '확인', content: '칼타공기 공개 일정 확정. 7/20~7/24 진행 예정',                               followUpTaskId: null },
@@ -510,38 +576,193 @@ const DEFAULT_COMMS = [
   { id: 'c-001', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-12', type: '확인', content: '오픈 일정 최종 확인 완료, 6/15 예정대로 진행',  followUpTaskId: null },
   { id: 'c-004', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-08', type: '이슈', content: '이벤트 배너 이미지 최종 확인 필요',               followUpTaskId: 't-003' },
 ];
+const PROGRESS_STEPS = ['일정 확정','상품 확정','샘플수령 완료','이벤트 확인','콘텐츠팀 전달','공구 오픈','판매량 공유','공구 마감'];
+const DEFAULT_EVENT_PROGRESS = {
+  'evt-001': { checked:[true, true, true, true, true, true, false, false] },
+  'evt-002': { checked:[true, true, false,false,false,false,false,false] },
+  'evt-003': { checked:[true, true, false,false,false,false,false,false] },
+  'evt-004': { checked:[true, true, false,false,false,false,false,false] },
+  'evt-008': { checked:[true, false,false,false,false,false,false,false] },
+  'evt-010': { checked:[true, false,false,false,false,false,false,false] },
+  'evt-012': { checked:[true, false,false,false,false,false,false,false] },
+};
 const DEFAULT_PROGRESS = {
-  baobab:   { steps: ['계약 완료','상품 발주','촬영·편집','콘텐츠 업로드','홍보 발송','공구 오픈'], checked: [true,true,true,true,false,false] },
-  chilgeun: { steps: ['계약 완료','상품 확인','콘텐츠 제작','홍보 준비','공구 오픈'],              checked: [true,true,false,false,false] },
+  navita:   { steps: PROGRESS_STEPS, checked: [false,false,false,false,false,false,false,false] },
+  chilgeun: { steps: PROGRESS_STEPS, checked: [true, true, false,false,false,false,false,false] },
+  naelna:   { steps: PROGRESS_STEPS, checked: [true, false,false,false,false,false,false,false] },
+  baobab:   { steps: PROGRESS_STEPS, checked: [true, true, true, true, true, true, false,false] },
+  jnj:      { steps: PROGRESS_STEPS, checked: [true, true, false,false,false,false,false,false] },
+  kreta:    { steps: PROGRESS_STEPS, checked: [true, false,false,false,false,false,false,false] },
+  ilpro:    { steps: PROGRESS_STEPS, checked: [true, false,false,false,false,false,false,false] },
 };
 
 // ══════════════ 상태 ══════════════
-const S = { vendors:[], events:[], tasks:[], comms:[], progress:{} };
+const S = { vendors:[], events:[], tasks:[], comms:[], progress:{}, evtProgress:{} };
 
 function load() {
   S.vendors  = JSON.parse(localStorage.getItem('gg2_vendors'))  || JSON.parse(JSON.stringify(DEFAULT_VENDORS));
   S.events   = JSON.parse(localStorage.getItem('gg2_events'))   || JSON.parse(JSON.stringify(DEFAULT_EVENTS));
   S.tasks    = JSON.parse(localStorage.getItem('gg2_tasks'))    || JSON.parse(JSON.stringify(DEFAULT_TASKS));
   S.comms    = JSON.parse(localStorage.getItem('gg2_comms'))    || JSON.parse(JSON.stringify(DEFAULT_COMMS));
-  S.progress = JSON.parse(localStorage.getItem('gg2_progress')) || JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
+  S.progress    = JSON.parse(localStorage.getItem('gg2_progress'))     || JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
+  S.evtProgress = JSON.parse(localStorage.getItem('gg2_evt_progress')) || JSON.parse(JSON.stringify(DEFAULT_EVENT_PROGRESS));
+  migrateVendors();
+  migrateEvents();
+  migrateProgress();
+  migrateBaobab();
+}
+function migrateProgress() {
+  S.vendors.forEach(v => {
+    const p = S.progress[v.id];
+    if (!p || JSON.stringify(p.steps) !== JSON.stringify(PROGRESS_STEPS)) {
+      // 기존 체크 수만큼 앞에서부터 순서대로 적용
+      const checkedCount = p ? p.checked.filter(Boolean).length : 0;
+      S.progress[v.id] = {
+        steps:   PROGRESS_STEPS,
+        checked: PROGRESS_STEPS.map((_, i) => i < checkedCount),
+      };
+    }
+  });
+}
+function migrateVendors() {
+  const newVendors = [
+    { id: 'gabefam', name: '가베가족', paused: false },
+  ];
+  newVendors.forEach(nv => {
+    if (!S.vendors.find(v => v.id === nv.id)) S.vendors.push(nv);
+  });
+}
+function migrateBaobab() {
+  // 공구사 이름 변경
+  const v = S.vendors.find(v => v.id === 'baobab');
+  if (v && v.name === '바오밥') v.name = '행복한 바오밥';
+
+  // evt-001을 셈셈 보드게임 6/15~6/22로 업데이트
+  const ev = S.events.find(e => e.id === 'evt-001');
+  if (ev) { ev.title = '셈셈 보드게임'; ev.startDate = '2026-06-15'; ev.endDate = '2026-06-22'; }
+
+  // evt-010 칼타공기 일정 8/20~8/24로 수정
+  const ev010 = S.events.find(e => e.id === 'evt-010');
+  if (ev010) { ev010.startDate = '2026-08-20'; ev010.endDate = '2026-08-24'; }
+
+  // evt-004 비상 공구 일정 8/26~8/30으로 수정
+  const ev004 = S.events.find(e => e.id === 'evt-004');
+  if (ev004) { ev004.startDate = '2026-08-26'; ev004.endDate = '2026-08-30'; }
+
+  // evt-006, evt-007 → evt-001으로 통합 후 삭제
+  ['evt-006', 'evt-007'].forEach(id => {
+    S.tasks.forEach(t => { if (t.eventId === id) t.eventId = 'evt-001'; });
+    S.comms.forEach(c => { if (c.eventId === id) c.eventId = 'evt-001'; });
+    S.events = S.events.filter(e => e.id !== id);
+  });
+
+  // 기존 evtProgress에서 evt-006, evt-007 제거
+  delete S.evtProgress['evt-006'];
+  delete S.evtProgress['evt-007'];
+}
+function migrateEvents() {
+  // date → startDate 변환
+  S.events = S.events.map(e => ({
+    ...e,
+    startDate: e.startDate || e.date || '',
+    endDate:   'endDate' in e ? e.endDate : null,
+  }));
+  // 기존 시작/종료 쌍 통합
+  [
+    { startId:'evt-008', endId:'evt-009', endDate:'2026-07-14', title:'낼나 타임타이머 공구' },
+    { startId:'evt-010', endId:'evt-011', endDate:'2026-07-24', title:'칼타공기 공구' },
+    { startId:'evt-012', endId:'evt-013', endDate:'2026-10-05', title:'일프로 연산 공구' },
+  ].forEach(({ startId, endId, endDate, title }) => {
+    const st = S.events.find(e => e.id === startId);
+    if (st && !st.endDate) { st.endDate = endDate; st.title = title; }
+    S.events = S.events.filter(e => e.id !== endId);
+    S.tasks.forEach(t => { if (t.eventId === endId) t.eventId = startId; });
+    S.comms.forEach(c => { if (c.eventId === endId) c.eventId = startId; });
+  });
 }
 function save() {
   localStorage.setItem('gg2_vendors',  JSON.stringify(S.vendors));
   localStorage.setItem('gg2_events',   JSON.stringify(S.events));
   localStorage.setItem('gg2_tasks',    JSON.stringify(S.tasks));
   localStorage.setItem('gg2_comms',    JSON.stringify(S.comms));
-  localStorage.setItem('gg2_progress', JSON.stringify(S.progress));
+  localStorage.setItem('gg2_progress',     JSON.stringify(S.progress));
+  localStorage.setItem('gg2_evt_progress', JSON.stringify(S.evtProgress));
 }
 
 // ══════════════ 유틸 ══════════════
 const TODAY = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
 
-function todayStr() { return TODAY.toISOString().slice(0,10); }
+function todayStr() {
+  return `${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}-${String(TODAY.getDate()).padStart(2,'0')}`;
+}
 function dday(ds)   { const d = new Date(ds); d.setHours(0,0,0,0); return Math.round((d-TODAY)/86400000); }
 function ddayLabel(ds) { const n=dday(ds); return n===0?'D-Day':n>0?`D-${n}`:`D+${Math.abs(n)}`; }
 function fmtDate(ds) { const [,m,d]=ds.split('-'); return `${m}/${d}`; }
 function vendorName(id) { const v=S.vendors.find(v=>v.id===id); return v?v.name:id; }
+
+// ── 이벤트 범위 헬퍼 ──
+function evStart(e)  { return e.startDate || e.date || ''; }
+function evEnd(e)    { return e.endDate || null; }
+function evIsActive(e) {
+  const end = evEnd(e);
+  return end ? dday(end) >= 0 : dday(evStart(e)) >= 0;
+}
+function evDdayLabel(e) {
+  const end = evEnd(e), start = evStart(e);
+  if (end) {
+    if (dday(start) > 0) return `D-${dday(start)}`;
+    if (dday(end) >= 0)  return '진행중';
+    return '종료';
+  }
+  return ddayLabel(start);
+}
+function evBadgeCls(e) {
+  const end = evEnd(e), start = evStart(e);
+  if (end) {
+    const sd = dday(start);
+    if (sd > 0) return sd <= 7 ? 'badge-orange' : 'badge-brown';
+    return 'badge-green';
+  }
+  const n = dday(start);
+  return n===0?'badge-red':n<0?'badge-gray':n<=7?'badge-orange':'badge-brown';
+}
+function evFmtDate(e) {
+  const end = evEnd(e);
+  return end ? `${fmtDate(evStart(e))}~${fmtDate(end)}` : fmtDate(evStart(e));
+}
+function evRangeBar(e) {
+  const end = evEnd(e), start = evStart(e);
+  if (!end) return '';
+  const sd = new Date(start), ed = new Date(end);
+  const total   = Math.max((ed - sd) / 86400000, 1);
+  const elapsed = Math.min(Math.max((TODAY - sd) / 86400000, 0), total);
+  const pct     = Math.round(elapsed / total * 100);
+  return `<div style="margin:8px 0 2px">
+    <div style="height:8px;background:var(--cream2);border-radius:4px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--yellow),var(--orange));border-radius:4px"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:2px">
+      <span>${fmtDate(start)}</span><span>${fmtDate(end)}</span>
+    </div>
+  </div>`;
+}
+function buildEvDateSet() {
+  const dates = new Set();
+  S.events.forEach(e => {
+    const start = evStart(e), end = evEnd(e);
+    if (!end) { dates.add(start); return; }
+    let cur = new Date(start);
+    const last = new Date(end);
+    while (cur <= last) { dates.add(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
+  });
+  return dates;
+}
 function eventById(id)  { return S.events.find(e=>e.id===id); }
+function getEvProg(evId) {
+  if (!S.evtProgress[evId]) S.evtProgress[evId] = { checked: new Array(8).fill(false), links: [] };
+  if (!S.evtProgress[evId].links) S.evtProgress[evId].links = [];
+  return S.evtProgress[evId];
+}
 function taskById(id)   { return S.tasks.find(t=>t.id===id); }
 function commById(id)   { return S.comms.find(c=>c.id===id); }
 function genId(p)       { return p+'-'+Date.now()+'-'+Math.floor(Math.random()*1000); }
@@ -551,7 +772,7 @@ function toast(msg) {
   setTimeout(()=>el.classList.remove('show'),2500);
 }
 function typeColor(t) {
-  return {이슈:'badge-red',할일:'badge-orange',완료:'badge-green',확인:'badge-yellow',정보:'badge-brown'}[t]||'badge-gray';
+  return {일정:'badge-yellow',품목:'badge-brown',이슈:'badge-red'}[t]||'badge-gray';
 }
 
 // ══════════════ 네비게이션 ══════════════
@@ -562,102 +783,197 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     item.classList.add('active');
     document.getElementById('section-'+sec).classList.add('active');
-    if (sec==='schedule') renderCalendar();
+    if (sec==='schedule')   renderCalendar();
+    if (sec==='gonggu')     renderGonggu();
+    if (sec==='vendorhist') renderVendorHistory();
   });
 });
 
 // ══════════════ ① 오늘 확인 ══════════════
+function renderTodayGongguBar() {
+  const el = document.getElementById('today-gonggu-bar');
+  const ts = todayStr();
+
+  const ongoing = S.events.filter(e => {
+    const s = evStart(e), en = evEnd(e);
+    return en ? (ts >= s && ts <= en) : s === ts;
+  }).sort((a,b) => evStart(a).localeCompare(evStart(b)));
+
+  const next = S.events.filter(e => evIsActive(e) && dday(evStart(e)) > 0)
+    .sort((a,b) => evStart(a).localeCompare(evStart(b))).slice(0, 1);
+
+  const all = [...ongoing.map(e=>({e,type:'ongoing'})), ...next.map(e=>({e,type:'next'}))];
+  if (!all.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+    ${all.map(({e,type}) => `
+    <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-left:3px solid ${type==='ongoing'?'var(--green)':'var(--orange)'};border-radius:var(--radius-sm);padding:10px 14px;box-shadow:var(--shadow)">
+      <span style="font-size:11px;font-weight:700;color:${type==='ongoing'?'#2E7D32':'#A04010'}">${type==='ongoing'?'진행 중':'다음'}</span>
+      <span style="font-size:14px;font-weight:600;color:var(--text-dark)">${e.title}</span>
+      <span style="font-size:12px;color:var(--text-light)">${evFmtDate(e)}</span>
+      <span class="badge ${evBadgeCls(e)}">${evDdayLabel(e)}</span>
+    </div>`).join('')}
+  </div>
+  <hr style="border:none;border-top:1px solid var(--border);margin-bottom:20px">`;
+}
+
 function renderToday() {
   const ts = todayStr();
-  const todayEvIds = new Set(S.events.filter(e=>e.date===ts).map(e=>e.id));
-  const weekEvIds  = new Set(S.events.filter(e=>{ const n=dday(e.date); return n>0&&n<=7; }).map(e=>e.id));
+  const todayEvIds = new Set(S.events.filter(e => {
+    const s = evStart(e), en = evEnd(e);
+    return en ? (ts >= s && ts <= en) : s === ts;
+  }).map(e=>e.id));
+  const weekEvIds = new Set(S.events.filter(e => {
+    const s = evStart(e), en = evEnd(e);
+    const sd = dday(s);
+    return en ? (sd > 0 && sd <= 7 && dday(en) >= 0) : (sd > 0 && sd <= 7);
+  }).map(e=>e.id));
 
-  const todayTasks = S.tasks.filter(t=>!t.done&&!t.archived&&(t.urgent||(t.eventId&&todayEvIds.has(t.eventId))));
-  const weekTasks  = S.tasks.filter(t=>!t.done&&!t.archived&&!t.urgent&&!(t.eventId&&todayEvIds.has(t.eventId))&&(t.eventId&&weekEvIds.has(t.eventId)||!t.eventId)).slice(0,8);
-  const issueComms = S.comms.filter(c=>c.type==='이슈'&&c.followUpTaskId);
-  const issueTasks = issueComms.map(c=>taskById(c.followUpTaskId)).filter(t=>t&&!t.done&&!t.archived);
+  const todayTasks = S.tasks.filter(t=>!t.done&&!t.archived&&(t.eventId&&todayEvIds.has(t.eventId)));
+  const weekTasks  = S.tasks.filter(t=>!t.done&&!t.archived&&!(t.eventId&&todayEvIds.has(t.eventId))&&(t.eventId&&weekEvIds.has(t.eventId)||!t.eventId)).slice(0,8);
+  const recentComms = [...S.comms].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,2);
 
   renderZone('zone-today-list', todayTasks);
   renderZone('zone-week-list',  weekTasks);
-  renderZone('zone-issue-list', issueTasks);
+  renderRecentComms(recentComms);
+  renderTodayGongguBar();
+}
 
-  const urgentEl = document.getElementById('header-urgent');
-  todayEvIds.size > 0 ? urgentEl.classList.add('show') : urgentEl.classList.remove('show');
+function renderRecentComms(comms) {
+  const el = document.getElementById('zone-issue-list');
+  if (!comms.length) { el.innerHTML='<div class="empty-zone">없음</div>'; return; }
+  el.innerHTML = comms.map(c=>`
+    <div class="today-task-item">
+      <div style="flex:1">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px">
+          <span class="today-vendor-tag">${vendorName(c.vendorId)}</span>
+          <span style="font-size:11px;color:var(--text-light)">${c.date}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-dark);line-height:1.4">${c.content.length>40?c.content.slice(0,40)+'…':c.content}</div>
+      </div>
+    </div>`).join('');
 }
 
 function renderZone(cid, tasks) {
   const el = document.getElementById(cid);
   if (!tasks.length) { el.innerHTML='<div class="empty-zone">없음</div>'; return; }
-  el.innerHTML = tasks.map(t=>`
+  el.innerHTML = tasks.map(t=>{
+    const ev = t.eventId ? eventById(t.eventId) : null;
+    return `
     <div class="today-task-item">
       <input type="checkbox" ${t.done?'checked':''} onchange="toggleTaskDone('${t.id}',this.checked)">
       <div style="flex:1">
         <div class="today-task-text ${t.done?'done':''}">${t.content}</div>
-        <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
-          <span class="today-vendor-tag">${vendorName(t.vendorId)}</span>
-          ${t.urgent?'<span class="badge badge-urgent" style="font-size:10px">긴급</span>':''}
-          ${t.eventId?`<span class="badge badge-orange" style="font-size:10px">${(eventById(t.eventId)||{title:''}).title}</span>`:''}
-        </div>
+        ${ev?`<div style="margin-top:2px;font-size:11px;color:var(--text-light)">${ev.title}</div>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ══════════════ ② 공구 일정 ══════════════
 let calYear = TODAY.getFullYear(), calMonth = TODAY.getMonth();
 
-function renderCalendar() {
-  document.getElementById('cal-month-label').textContent = `${calYear}년 ${calMonth+1}월`;
-  const grid = document.getElementById('cal-grid');
-  const dows = ['일','월','화','수','목','금','토'];
-  let html = dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+function buildRangeMap() {
+  const map = {};
+  S.events.forEach(e => {
+    const s = evStart(e), en = evEnd(e) || evStart(e);
+    let cur = new Date(s + 'T00:00:00'), last = new Date(en + 'T00:00:00');
+    while (cur <= last) {
+      const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+      if (!map[ds]) map[ds] = { isStart: false, isEnd: false };
+      if (ds === s)  map[ds].isStart = true;
+      if (ds === en) map[ds].isEnd   = true;
+      cur.setDate(cur.getDate()+1);
+    }
+  });
+  return map;
+}
 
+function renderCalendar() {
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('cal-month-label').textContent = `${calYear}년 ${calMonth+1}월`;
+  const grid  = document.getElementById('cal-grid');
+  const dows  = ['일','월','화','수','목','금','토'];
   const first = new Date(calYear, calMonth, 1);
   const last  = new Date(calYear, calMonth+1, 0);
-  const evDates = new Set(S.events.map(e=>e.date));
+  const rmap  = buildRangeMap();
 
-  for (let i=0; i<first.getDay(); i++) {
-    const d = new Date(calYear, calMonth, -first.getDay()+i+1);
-    html += `<div class="cal-day other-month">${d.getDate()}</div>`;
-  }
-  for (let d=1; d<=last.getDate(); d++) {
-    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dow = new Date(calYear,calMonth,d).getDay();
-    const cls = ['cal-day', ds===todayStr()?'today':'', evDates.has(ds)?'has-event':'', dow===0?'sunday':'', dow===6?'saturday':''].filter(Boolean).join(' ');
-    html += `<div class="${cls}">${d}</div>`;
+  // DOW 헤더
+  let html = `<div class="cal-week">${dows.map(d=>`<div class="cal-dow">${d}</div>`).join('')}</div>`;
+
+  // 전체 날짜 배열 (앞뒤 패딩 포함)
+  const cells = [];
+  for (let i=0; i<first.getDay(); i++) cells.push(null);
+  for (let d=1; d<=last.getDate(); d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  for (let w=0; w<cells.length/7; w++) {
+    html += '<div class="cal-week">';
+    for (let i=0; i<7; i++) {
+      const d   = cells[w*7+i];
+      const dow = i; // 0=일,6=토
+      if (d === null) { html += '<div class="cal-day other-month" style="flex:1"></div>'; continue; }
+      const ds  = `${calYear}-${pad(calMonth+1)}-${pad(d)}`;
+      const ri  = rmap[ds];
+      const isToday = ds === todayStr();
+      const cls = ['cal-day'];
+      if (isToday) {
+        cls.push('today');
+      } else if (ri) {
+        cls.push('range-fill');
+        if (ri.isStart || i === 0) cls.push('range-start');
+        if (ri.isEnd   || i === 6) cls.push('range-end');
+      }
+      if (dow === 0) cls.push('sunday');
+      if (dow === 6) cls.push('saturday');
+      const click = ri || isToday ? `onclick="calDayClick('${ds}')"` : '';
+      html += `<div class="${cls.join(' ')}" style="flex:1" ${click}>${d}</div>`;
+    }
+    html += '</div>';
   }
   grid.innerHTML = html;
-  renderEventList();
+  renderEventBars();
 }
 
-function renderEventList() {
-  const el = document.getElementById('event-list');
-  const sorted = [...S.events].sort((a,b)=>a.date.localeCompare(b.date));
-  el.innerHTML = sorted.map(ev=>{
-    const n = dday(ev.date);
-    const badgeCls = n===0?'badge-red':n<0?'badge-gray':n<=7?'badge-orange':'badge-brown';
-    const rTasks = S.tasks.filter(t=>t.eventId===ev.id&&!t.archived);
-    const rComms = S.comms.filter(c=>c.eventId===ev.id);
+function renderEventBars() {
+  const el = document.getElementById('event-bars');
+  if (!el) return;
+  const sorted = [...S.events].sort((a,b) => evStart(a).localeCompare(evStart(b)));
+  if (!sorted.length) { el.innerHTML = '<div style="color:var(--text-light);font-size:13px;padding:16px 0;text-align:center">등록된 일정이 없습니다</div>'; return; }
+
+  const upcoming = sorted.filter(evIsActive);
+  const past     = sorted.filter(e => !evIsActive(e));
+
+  const cardHtml = ev => {
+    const active = evIsActive(ev);
     return `
-    <div class="event-card">
-      <div class="event-card-header">
-        <div class="event-title">${ev.title}</div>
-        <span class="badge ${badgeCls}">${ddayLabel(ev.date)}</span>
+    <div id="evt-bar-${ev.id}" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:14px;font-weight:600;color:var(--text-dark)">${ev.title}</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <span class="badge ${active ? evBadgeCls(ev) : 'badge-gray'}">${active ? evDdayLabel(ev) : '종료'}</span>
+          <button class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px" onclick="openEventEdit('${ev.id}')">수정</button>
+          <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);padding:2px 8px;font-size:11px" onclick="deleteEvent('${ev.id}')">삭제</button>
+        </div>
       </div>
-      <div class="event-meta"><span>${fmtDate(ev.date)}</span><span>${vendorName(ev.vendorId)}</span></div>
-      <div class="event-links">
-        ${rTasks.length?`<button class="event-link-btn" onclick="toggleEventLinks(this,'${ev.id}','tasks')">연결된 할 일 ${rTasks.length}건</button>`:''}
-        ${rComms.length?`<button class="event-link-btn" onclick="toggleEventLinks(this,'${ev.id}','comms')">관련 소통 ${rComms.length}건</button>`:''}
-      </div>
-      <div class="event-linked-items" id="ev-links-${ev.id}"></div>
+      <div style="font-size:12px;color:var(--text-light)">${vendorName(ev.vendorId)} · ${evFmtDate(ev)}</div>
     </div>`;
-  }).join('');
+  };
+
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
+    ${upcoming.map(cardHtml).join('')}
+    ${past.length ? `
+      <div style="font-size:11px;font-weight:700;color:var(--text-light);padding:8px 0 2px;letter-spacing:0.5px">지난 일정</div>
+      ${past.map(cardHtml).join('')}` : ''}
+  </div>`;
 }
+
 
 function toggleEventLinks(btn, evId, type) {
   const panel = document.getElementById('ev-links-'+evId);
   if (panel.classList.contains('open')) { panel.classList.remove('open'); return; }
   const items = type==='tasks'
-    ? S.tasks.filter(t=>t.eventId===evId&&!t.archived).map(t=>`<div class="linked-item">${t.content} <span class="badge ${t.urgent?'badge-urgent':'badge-brown'}" style="font-size:10px">${t.urgent?'긴급':'일반'}</span> <span class="badge ${t.done?'badge-gray':'badge-yellow'}" style="font-size:10px">${t.done?'완료':'진행'}</span></div>`)
+    ? S.tasks.filter(t=>t.eventId===evId&&!t.archived).map(t=>`<div class="linked-item">${t.content} <span class="badge ${t.done?'badge-gray':'badge-yellow'}" style="font-size:10px">${t.done?'완료':'진행'}</span></div>`)
     : S.comms.filter(c=>c.eventId===evId).map(c=>`<div class="linked-item">[${c.type}] ${fmtDate(c.date)} ${c.content}</div>`);
   panel.innerHTML = items.join('');
   panel.classList.add('open');
@@ -666,108 +982,253 @@ function toggleEventLinks(btn, evId, type) {
 document.getElementById('cal-prev').addEventListener('click', ()=>{ if(--calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
 document.getElementById('cal-next').addEventListener('click', ()=>{ if(++calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
 
-// ══════════════ ③ 공구사 현황 ══════════════
-let selectedVendorId = null;
+function calDayClick(ds) {
+  const eventsOnDay = S.events.filter(e => {
+    const s = evStart(e), en = evEnd(e);
+    return en ? (ds >= s && ds <= en) : s === ds;
+  });
+  if (!eventsOnDay.length) return;
 
-function renderVendors() {
-  const grid = document.getElementById('vendor-grid');
-  grid.innerHTML = S.vendors.map(v=>{
-    const prog = S.progress[v.id];
-    let pHtml = '';
-    if (prog) {
-      const done=prog.checked.filter(Boolean).length, total=prog.steps.length;
-      const pct=Math.round(done/total*100);
-      pHtml = `<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div><div class="progress-label">${pct}% (${done}/${total}단계)</div>`;
-    } else {
-      pHtml = '<div class="progress-label" style="margin-top:6px">일정 준비중</div>';
-    }
-    const nxtEv = S.events.filter(e=>e.vendorId===v.id&&dday(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const [, m, d] = ds.split('-');
+  document.getElementById('cal-popup-date').textContent = `${parseInt(m)}월 ${parseInt(d)}일`;
+
+  document.getElementById('cal-popup-body').innerHTML = eventsOnDay.map(ev => {
+    const rTasks = S.tasks.filter(t => t.eventId === ev.id && !t.done && !t.archived);
+    const rComms = S.comms.filter(c => c.eventId === ev.id);
+    const doneTasks = S.tasks.filter(t => t.eventId === ev.id && t.done && !t.archived);
     return `
-    <div class="vendor-card ${selectedVendorId===v.id?'selected':''} ${v.paused?'paused':''}" onclick="selectVendor('${v.id}')">
-      <div class="vendor-name">${v.name}${v.paused?' <span class="badge badge-gray" style="font-size:10px">보류</span>':''}</div>
-      ${pHtml}
-      ${nxtEv?`<div style="margin-top:6px"><span class="badge badge-brown" style="font-size:11px">${ddayLabel(nxtEv.date)} ${nxtEv.title}</span></div>`:''}
+    <div class="cal-popup-event">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+        <div style="font-size:14px;font-weight:600;color:var(--text-dark)">${ev.title}</div>
+        <span class="badge ${evBadgeCls(ev)}" style="white-space:nowrap;flex-shrink:0">${evDdayLabel(ev)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="today-vendor-tag">${vendorName(ev.vendorId)}</span>
+        <span style="font-size:12px;color:var(--text-light)">${evFmtDate(ev)}</span>
+      </div>
+      ${evRangeBar(ev)}
+      ${rTasks.length || doneTasks.length ? `
+      <div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px">할 일</div>
+        ${[...rTasks, ...doneTasks].map(t=>`
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;color:${t.done?'var(--text-light)':'var(--text-dark)'}">
+            <input type="checkbox" ${t.done?'checked':''} onchange="toggleTaskDone('${t.id}',this.checked);calDayClick('${ds}')" style="accent-color:var(--brown)">
+            <span style="${t.done?'text-decoration:line-through':''}">${t.content}</span>
+
+          </div>`).join('')}
+      </div>` : ''}
+      ${rComms.length ? `
+      <div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px">소통 기록 ${rComms.length}건</div>
+        ${rComms.slice(0,2).map(c=>`
+          <div style="font-size:12px;color:var(--text-mid);padding:3px 0">
+            <span class="badge ${typeColor(c.type)}" style="font-size:10px">${c.type}</span>
+            <span style="margin-left:4px">${c.content.length>30?c.content.slice(0,30)+'…':c.content}</span>
+          </div>`).join('')}
+        ${rComms.length>2?`<div style="font-size:11px;color:var(--text-light);margin-top:2px">외 ${rComms.length-2}건 더</div>`:''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('cal-popup-overlay').style.display = 'block';
+  document.getElementById('cal-popup').style.display = 'block';
+}
+
+function closeCalPopup() {
+  document.getElementById('cal-popup-overlay').style.display = 'none';
+  document.getElementById('cal-popup').style.display = 'none';
+}
+
+// ══════════════ ③ 공구 현황 (공구별 단계 관리) ══════════════
+let selectedGongguId = null;
+
+function renderGonggu() {
+  const grid = document.getElementById('gonggu-grid');
+  const upcoming = S.events.filter(evIsActive).sort((a,b)=>evStart(a).localeCompare(evStart(b)));
+  const past     = S.events.filter(e=>!evIsActive(e)).sort((a,b)=>evStart(b).localeCompare(evStart(a)));
+  const all = [...upcoming, ...past];
+  if (!all.length) { grid.innerHTML='<div style="color:var(--text-light);font-size:13px;padding:24px">등록된 공구가 없습니다</div>'; return; }
+  grid.innerHTML = all.map(ev => {
+    const prog = getEvProg(ev.id);
+    const done = prog.checked.filter(Boolean).length;
+    const pct  = Math.round(done / 8 * 100);
+    const active = evIsActive(ev);
+    return `
+    <div class="vendor-card ${selectedGongguId===ev.id?'selected':''} ${!active?'paused':''}" onclick="selectGonggu('${ev.id}')">
+      <div class="vendor-name" style="font-size:13px;margin-bottom:4px">${ev.title}</div>
+      <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="today-vendor-tag">${vendorName(ev.vendorId)}</span>
+        <span style="font-size:11px;color:var(--text-light)">${evFmtDate(ev)}</span>
+        <span class="badge ${active?evBadgeCls(ev):'badge-gray'}" style="font-size:10px">${active?evDdayLabel(ev):'종료'}</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-label" style="margin-top:4px">${pct}% · ${done}/8단계</div>
     </div>`;
   }).join('');
 }
 
-function selectVendor(id) {
-  if (selectedVendorId===id) {
-    selectedVendorId=null;
-    document.getElementById('vendor-detail-panel').classList.remove('open');
-    renderVendors(); return;
+function selectGonggu(id) {
+  const panel = document.getElementById('gonggu-detail-panel');
+  if (selectedGongguId === id) {
+    selectedGongguId = null;
+    panel.style.display = 'none';
+    renderGonggu(); return;
   }
-  selectedVendorId=id; renderVendors(); renderVendorDetail(id);
+  selectedGongguId = id;
+  renderGonggu();
+  renderGongguDetail(id);
 }
 
-function renderVendorDetail(id) {
-  const vendor = S.vendors.find(v=>v.id===id);
-  const panel  = document.getElementById('vendor-detail-panel');
-  const prog   = S.progress[id];
-  const upEvts = S.events.filter(e=>e.vendorId===id&&dday(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
-  const rComms = [...S.comms].filter(c=>c.vendorId===id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
-  const pTasks = S.tasks.filter(t=>t.vendorId===id&&!t.done&&!t.archived);
-
-  let stepHtml = '';
-  if (prog) {
-    const done=prog.checked.filter(Boolean).length, total=prog.steps.length, pct=Math.round(done/total*100);
-    stepHtml = `
-      <div class="detail-section">
-        <div class="detail-section-label">진행 단계</div>
-        <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-        <div class="progress-label" style="margin-bottom:10px">${pct}% 완료 (${done}/${total})</div>
-        ${prog.steps.map((s,i)=>`
-          <label class="step-item ${prog.checked[i]?'checked':''}">
-            <input type="checkbox" ${prog.checked[i]?'checked':''} onchange="toggleStep('${id}',${i},this.checked)">
-            <span>${s}</span>
-          </label>`).join('')}
-      </div>`;
-  }
+function renderGongguDetail(evId) {
+  const ev   = S.events.find(e => e.id === evId); if (!ev) return;
+  const prog = getEvProg(evId);
+  const done = prog.checked.filter(Boolean).length;
+  const pct  = Math.round(done / 8 * 100);
+  const panel = document.getElementById('gonggu-detail-panel');
+  const rTasks = S.tasks.filter(t=>t.eventId===evId&&!t.done&&!t.archived);
+  const rComms = [...S.comms].filter(c=>c.eventId===evId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
 
   panel.innerHTML = `
-    <div class="detail-panel-title">${vendor.name} 상세</div>
-    ${stepHtml}
-    <div class="detail-section">
-      <div class="detail-section-label">다음 일정</div>
-      ${upEvts.length
-        ? upEvts.slice(0,2).map(e=>`<div style="font-size:13px;padding:4px 0;color:var(--text-mid)">${fmtDate(e.date)} ${e.title} <span class="badge badge-orange">${ddayLabel(e.date)}</span></div>`).join('')
-        : '<div style="font-size:13px;color:var(--text-light)">예정 일정 없음</div>'}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div>
+        <div class="detail-panel-title" style="margin-bottom:4px">${ev.title}</div>
+        <div style="font-size:13px;color:var(--text-mid);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="today-vendor-tag">${vendorName(ev.vendorId)}</span>
+          <span>${evFmtDate(ev)}</span>
+          <span class="badge ${evBadgeCls(ev)}">${evDdayLabel(ev)}</span>
+        </div>
+      </div>
+      <button onclick="selectGonggu('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
     </div>
     <div class="detail-section">
-      <div class="detail-section-label">최근 소통</div>
-      ${rComms.length
-        ? rComms.map(c=>`<div class="detail-comm-item"><span class="badge ${typeColor(c.type)}">${c.type}</span> <span style="margin-left:4px">${fmtDate(c.date)} ${c.content}</span></div>`).join('')
-        : '<div style="font-size:13px;color:var(--text-light)">소통 기록 없음</div>'}
+      <div class="detail-section-label">진행 단계</div>
+      <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/8단계)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+        ${PROGRESS_STEPS.map((s,i)=>`
+          <label class="step-item ${prog.checked[i]?'checked':''}">
+            <input type="checkbox" ${prog.checked[i]?'checked':''} onchange="toggleEvStep('${evId}',${i},this.checked)">
+            <span>${s}</span>
+          </label>`).join('')}
+      </div>
     </div>
-    <div class="detail-section">
-      <div class="detail-section-label">남은 할 일</div>
-      ${pTasks.length
-        ? pTasks.map(t=>`<div class="detail-task-item"><input type="checkbox" onchange="toggleTaskDone('${t.id}',this.checked)"><span style="font-size:13px">${t.content}</span>${t.urgent?'<span class="badge badge-urgent" style="font-size:10px">긴급</span>':''}</div>`).join('')
-        : '<div style="font-size:13px;color:var(--text-light)">남은 할 일 없음</div>'}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+      <div class="detail-section">
+        <div class="detail-section-label">남은 할 일</div>
+        ${rTasks.length
+          ? rTasks.map(t=>`<div class="detail-task-item"><input type="checkbox" onchange="toggleTaskDone('${t.id}',this.checked)"><span style="font-size:13px">${t.content}</span></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-label">최근 소통</div>
+        ${rComms.length
+          ? rComms.map(c=>`<div class="detail-comm-item"><span class="badge ${typeColor(c.type)}">${c.type}</span> <span style="margin-left:4px">${fmtDate(c.date)} ${c.content.length>20?c.content.slice(0,20)+'…':c.content}</span></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+    </div>
+    <div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="detail-section-label" style="margin-bottom:10px">공구 상세정보 링크</div>
+      <div id="ev-links-list-${evId}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        ${prog.links.length ? prog.links.map(lk=>`
+          <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
+            <a href="${lk.url}" target="_blank" style="flex:1;font-size:13px;color:var(--brown);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${lk.title}</a>
+            <span style="font-size:11px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">${lk.url}</span>
+            <button onclick="removeEvLink('${evId}','${lk.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;flex-shrink:0;padding:0 2px">✕</button>
+          </div>`).join('')
+        : '<div style="font-size:13px;color:var(--text-light)">등록된 링크 없음</div>'}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="ev-link-title-${evId}" placeholder="링크 이름" style="width:130px">
+        <input type="text" id="ev-link-url-${evId}" placeholder="https://..." style="flex:1;min-width:180px">
+        <button class="btn btn-primary btn-sm" onclick="addEvLink('${evId}')">추가</button>
+      </div>
     </div>`;
-  panel.classList.add('open');
-  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-function toggleStep(vendorId, idx, checked) {
-  if (!S.progress[vendorId]) return;
-  S.progress[vendorId].checked[idx] = checked;
-  save(); renderVendors(); renderVendorDetail(vendorId); renderToday();
+function addEvLink(evId) {
+  const title = document.getElementById('ev-link-title-'+evId).value.trim();
+  const url   = document.getElementById('ev-link-url-'+evId).value.trim();
+  if (!title) { toast('링크 이름을 입력해 주세요'); return; }
+  if (!url)   { toast('URL을 입력해 주세요'); return; }
+  const prog = getEvProg(evId);
+  prog.links.push({ id: genId('lk'), title, url });
+  save(); renderGongguDetail(evId); toast('링크가 추가되었습니다');
+}
+
+function removeEvLink(evId, linkId) {
+  const prog = getEvProg(evId);
+  prog.links = prog.links.filter(l => l.id !== linkId);
+  save(); renderGongguDetail(evId);
+}
+
+function toggleEvStep(evId, idx, checked) {
+  const prog = getEvProg(evId);
+  prog.checked[idx] = checked;
+  save(); renderGonggu(); renderGongguDetail(evId); renderToday();
+}
+
+// ══════════════ ④ 공구사 현황 (누적 이력) ══════════════
+function renderVendorHistory() {
+  const el = document.getElementById('vendor-hist-list');
+  const sorted = [...S.vendors].sort((a, b) => {
+    const lastA = S.comms.filter(c=>c.vendorId===a.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+    const lastB = S.comms.filter(c=>c.vendorId===b.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+    const da = lastA ? lastA.date : '0000-00-00';
+    const db = lastB ? lastB.date : '0000-00-00';
+    return db.localeCompare(da);
+  });
+  el.innerHTML = sorted.map(v => {
+    const evs   = S.events.filter(e=>e.vendorId===v.id).sort((a,b)=>evStart(b).localeCompare(evStart(a)));
+    const comms = [...S.comms].filter(c=>c.vendorId===v.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,2);
+    return `
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:16px;font-weight:700;color:var(--brown)">${v.name}</div>
+        <span class="badge ${v.paused?'badge-gray':'badge-green'}">${v.paused?'보류':'활성'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div class="detail-section-label" style="margin-bottom:8px">공구 이력 (${evs.length}건)</div>
+          ${evs.length ? evs.map(ev => {
+            const active = evIsActive(ev);
+            return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--cream2)">
+              <span class="badge ${active?evBadgeCls(ev):'badge-gray'}" style="font-size:10px;flex-shrink:0">${active?evDdayLabel(ev):'종료'}</span>
+              <div style="flex:1;font-size:13px;color:var(--text-dark);font-weight:500">${ev.title}</div>
+              <span style="font-size:11px;color:var(--text-light)">${evFmtDate(ev)}</span>
+            </div>`;
+          }).join('') : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+        </div>
+        <div>
+          <div class="detail-section-label" style="margin-bottom:8px">최근 소통</div>
+          ${comms.length ? comms.map(c=>`
+            <div style="padding:7px 0;border-bottom:1px solid var(--cream2)">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+                <span class="badge ${typeColor(c.type)}" style="font-size:10px">${c.type}</span>
+                <span style="font-size:11px;color:var(--text-light)">${c.date}</span>
+              </div>
+              <div style="font-size:13px;color:var(--text-dark)">${c.content.length>40?c.content.slice(0,40)+'…':c.content}</div>
+            </div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════ ④ 할 일 ══════════════
-let taskFilterVendor='all', isUrgent=true, archiveOpen=false;
+let taskFilterVendor='all', archiveOpen=false;
 
 function initTaskForm() {
+  document.getElementById('task-date').value = todayStr();
   const vSel = document.getElementById('task-vendor');
   vSel.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
   vSel.addEventListener('change', ()=>{
     const evSel = document.getElementById('task-event');
     evSel.innerHTML = '<option value="">없음</option>' +
-      S.events.filter(e=>e.vendorId===vSel.value).map(e=>`<option value="${e.id}">${e.title} (${fmtDate(e.date)})</option>`).join('');
+      S.events.filter(e=>e.vendorId===vSel.value).map(e=>`<option value="${e.id}">${e.title} (${evFmtDate(e)})</option>`).join('');
   });
-  document.getElementById('toggle-urgent').addEventListener('click', ()=>{ isUrgent=true; document.getElementById('toggle-urgent').className='sel-urgent'; document.getElementById('toggle-normal').className=''; });
-  document.getElementById('toggle-normal').addEventListener('click', ()=>{ isUrgent=false; document.getElementById('toggle-urgent').className=''; document.getElementById('toggle-normal').className='sel-normal'; });
   document.getElementById('btn-add-task').addEventListener('click', addTask);
   document.getElementById('task-content').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
   document.getElementById('archive-toggle').addEventListener('click', ()=>{
@@ -790,7 +1251,7 @@ function buildTaskFilters() {
 function renderTaskList() {
   const el = document.getElementById('task-list');
   let tasks = S.tasks.filter(t=>!t.archived&&(taskFilterVendor==='all'||t.vendorId===taskFilterVendor));
-  tasks.sort((a,b)=>{ if(a.done!==b.done)return a.done?1:-1; if(a.urgent!==b.urgent)return a.urgent?-1:1; return 0; });
+  tasks.sort((a,b)=>{ if(a.done!==b.done)return a.done?1:-1; return 0; });
   if (!tasks.length) { el.innerHTML='<div style="color:var(--text-light);font-size:13px;padding:16px;text-align:center">할 일이 없습니다</div>'; return; }
   el.innerHTML = tasks.map(taskItemHtml).join('');
 }
@@ -799,20 +1260,19 @@ function taskItemHtml(t) {
   const ev = t.eventId ? eventById(t.eventId) : null;
   const lc = t.followUpFromCommId ? commById(t.followUpFromCommId) : null;
   return `
-  <div class="task-item ${t.urgent&&!t.done?'urgent':''} ${t.done?'done-item':''}">
+  <div class="task-item ${t.done?'done-item':''}" id="task-item-${t.id}">
     <input type="checkbox" ${t.done?'checked':''} onchange="toggleTaskDone('${t.id}',this.checked)">
     <div class="task-item-body">
       <div class="task-item-content ${t.done?'done-text':''}">${t.content}</div>
       <div class="task-item-meta">
-        <span class="today-vendor-tag">${vendorName(t.vendorId)}</span>
-        ${t.urgent?'<span class="badge badge-urgent" style="font-size:10px">긴급</span>':''}
-        ${ev?`<span class="task-event-tag">${ev.title}</span>`:''}
-        ${lc?`<span class="task-comm-link" onclick="gotoComms()">소통 기록 연결됨</span>`:''}
+        ${t.createdAt?`<span style="font-size:11px;color:var(--text-light)">${fmtDate(t.createdAt)}</span>`:''}
+        ${ev?`<span class="task-event-tag">${ev.title}</span>`:`<span class="today-vendor-tag">${vendorName(t.vendorId)}</span>`}
+        ${t.assignee?`<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--brown-light);color:var(--brown);font-weight:600">👤 ${t.assignee}</span>`:''}
       </div>
     </div>
     <div class="task-item-actions">
       ${!t.done?`<button class="btn btn-sm btn-done" onclick="toggleTaskDone('${t.id}',true)">완료</button>`:''}
-      <button class="btn btn-sm btn-archive" onclick="archiveTask('${t.id}')">보관</button>
+      <button class="btn btn-sm btn-outline" onclick="openTaskEdit('${t.id}')">수정</button>
     </div>
   </div>`;
 }
@@ -835,16 +1295,20 @@ function addTask() {
   const vendorId = document.getElementById('task-vendor').value;
   const eventId  = document.getElementById('task-event').value || null;
   const content  = document.getElementById('task-content').value.trim();
+  const dateVal  = document.getElementById('task-date').value.trim() || todayStr();
+  const assignee = document.getElementById('task-assignee').value || null;
   if (!content) { toast('할 일 내용을 입력해 주세요'); return; }
-  S.tasks.unshift({ id:genId('t'), vendorId, eventId, content, urgent:isUrgent, done:false, archived:false, isDefault:false, createdAt:todayStr(), followUpFromCommId:null });
-  save(); document.getElementById('task-content').value='';
-  renderTaskList(); renderToday(); renderEventList(); toast('할 일이 추가되었습니다');
+  S.tasks.unshift({ id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:dateVal, followUpFromCommId:null, assignee });
+  save(); document.getElementById('task-content').value=''; document.getElementById('task-date').value=todayStr(); document.getElementById('task-assignee').value='';
+  renderTaskList(); renderToday(); renderEventBars(); toast('할 일이 추가되었습니다');
 }
 
 function toggleTaskDone(id, checked) {
   const t = S.tasks.find(t=>t.id===id); if(!t) return;
-  t.done=checked; save(); renderTaskList(); renderToday();
-  if (selectedVendorId) renderVendorDetail(selectedVendorId);
+  t.done=checked;
+  if (checked) t.archived=true;
+  save(); renderTaskList(); renderToday();
+  if (selectedGongguId) renderGongguDetail(selectedGongguId);
 }
 
 function archiveTask(id) {
@@ -859,28 +1323,23 @@ function restoreTask(id) {
 }
 
 // ══════════════ ⑤ 소통 기록 ══════════════
-let commFilterType='all', followupUrgent=false;
+let commFilterType='all', commSearch='';
 
 function initCommForm() {
+  document.getElementById('comm-date').value = todayStr();
+  document.getElementById('comm-search').addEventListener('input', function(){ commSearch=this.value.trim(); renderCommFeed(); });
   const vSel = document.getElementById('comm-vendor');
   vSel.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
   vSel.addEventListener('change', ()=>{
     const evSel = document.getElementById('comm-event');
     evSel.innerHTML = '<option value="">없음</option>' +
-      S.events.filter(e=>e.vendorId===vSel.value).map(e=>`<option value="${e.id}">${e.title} (${fmtDate(e.date)})</option>`).join('');
+      S.events.filter(e=>e.vendorId===vSel.value).map(e=>`<option value="${e.id}">${e.title} (${evFmtDate(e)})</option>`).join('');
   });
   document.getElementById('comm-followup-check').addEventListener('change', function(){
-    document.getElementById('followup-section').classList.toggle('open',this.checked);
+    document.getElementById('followup-section').classList.toggle('open', this.checked);
   });
-  document.getElementById('followup-urgent-btn').addEventListener('click', ()=>{
-    followupUrgent=true;
-    document.getElementById('followup-urgent-btn').className='sel-urgent';
-    document.getElementById('followup-normal-btn').className='';
-  });
-  document.getElementById('followup-normal-btn').addEventListener('click', ()=>{
-    followupUrgent=false;
-    document.getElementById('followup-urgent-btn').className='';
-    document.getElementById('followup-normal-btn').className='sel-normal';
+  document.getElementById('comm-newevent-check').addEventListener('change', function(){
+    document.getElementById('newevent-section').classList.toggle('open', this.checked);
   });
   document.getElementById('btn-add-comm').addEventListener('click', addComm);
   document.querySelectorAll('.comm-filters .filter-btn').forEach(btn=>{
@@ -896,20 +1355,28 @@ function renderCommFeed() {
   const el = document.getElementById('comm-feed');
   let comms = [...S.comms].sort((a,b)=>b.date.localeCompare(a.date));
   if (commFilterType!=='all') comms=comms.filter(c=>c.type===commFilterType);
+  if (commSearch) {
+    const q = commSearch.toLowerCase();
+    comms = comms.filter(c => c.content.toLowerCase().includes(q) || vendorName(c.vendorId).toLowerCase().includes(q));
+  }
   if (!comms.length) { el.innerHTML='<div style="color:var(--text-light);font-size:13px;padding:16px;text-align:center">소통 기록이 없습니다</div>'; return; }
   el.innerHTML = comms.map(c=>{
     const ft = c.followUpTaskId ? taskById(c.followUpTaskId) : null;
     const ev = c.eventId ? eventById(c.eventId) : null;
     return `
-    <div class="comm-item">
+    <div class="comm-item" id="comm-item-${c.id}">
       <div class="comm-item-header">
         <span class="badge ${typeColor(c.type)}">${c.type}</span>
         <span class="today-vendor-tag">${vendorName(c.vendorId)}</span>
-        <span style="font-size:12px;color:var(--text-light)">${fmtDate(c.date)}</span>
+        <span style="font-size:12px;color:var(--text-light)">${c.date}</span>
         ${ev?`<span class="badge badge-brown" style="font-size:10px">${ev.title}</span>`:''}
       </div>
       <div class="comm-item-content">${c.content}</div>
       ${ft?`<div class="comm-item-followup" onclick="gotoTasks()">후속 할 일: ${ft.content} ${ft.done?'✅':'→ 미완료'}</div>`:''}
+      <div style="text-align:right;margin-top:6px;display:flex;gap:6px;justify-content:flex-end">
+        <button class="btn btn-sm btn-outline" onclick="openCommEdit('${c.id}')">수정</button>
+        <button class="btn btn-sm" style="background:var(--red-light);color:var(--red)" onclick="deleteComm('${c.id}')">삭제</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -917,7 +1384,7 @@ function renderCommFeed() {
 function addComm() {
   const vendorId = document.getElementById('comm-vendor').value;
   const type     = document.getElementById('comm-type').value;
-  const eventId  = document.getElementById('comm-event').value || null;
+  let eventId    = document.getElementById('comm-event').value || null;
   const content  = document.getElementById('comm-content').value.trim();
   const hasFollowup = document.getElementById('comm-followup-check').checked;
   const followupContent = document.getElementById('followup-content').value.trim();
@@ -929,10 +1396,25 @@ function addComm() {
   let followUpTaskId = null;
   if (hasFollowup) {
     const taskId = genId('t');
-    S.tasks.unshift({ id:taskId, vendorId, eventId, content:followupContent, urgent:followupUrgent, done:false, archived:false, isDefault:false, createdAt:todayStr(), followUpFromCommId:commId });
+    S.tasks.unshift({ id:taskId, vendorId, eventId, content:followupContent, done:false, archived:false, isDefault:false, createdAt:todayStr(), followUpFromCommId:commId });
     followUpTaskId = taskId;
   }
-  S.comms.unshift({ id:commId, vendorId, eventId, date:todayStr(), type, content, followUpTaskId });
+  // 새 공구 일정 생성
+  const hasNewEvent = document.getElementById('comm-newevent-check').checked;
+  const newEventDate    = document.getElementById('newevent-date').value.trim();
+  const newEventEndDate = document.getElementById('newevent-enddate').value.trim() || null;
+  const newEventTitle   = document.getElementById('newevent-title').value.trim();
+  if (hasNewEvent) {
+    if (!newEventDate || !/^\d{4}-\d{2}-\d{2}$/.test(newEventDate)) { toast('일정 시작 날짜를 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
+    if (!newEventTitle) { toast('일정 제목을 입력해 주세요'); return; }
+    const newEvId = genId('evt');
+    S.events.push({ id: newEvId, vendorId, startDate: newEventDate, endDate: newEventEndDate, title: newEventTitle });
+    eventId = newEvId;
+  }
+
+  const commDate = document.getElementById('comm-date').value.trim() || todayStr();
+  document.getElementById('comm-date').value = todayStr();
+  S.comms.unshift({ id:commId, vendorId, eventId, date:commDate, type, content, followUpTaskId });
   save();
 
   document.getElementById('comm-vendor').value='';
@@ -940,10 +1422,16 @@ function addComm() {
   document.getElementById('comm-followup-check').checked=false;
   document.getElementById('followup-content').value='';
   document.getElementById('followup-section').classList.remove('open');
+  document.getElementById('comm-newevent-check').checked=false;
+  document.getElementById('newevent-date').value='';
+  document.getElementById('newevent-enddate').value='';
+  document.getElementById('newevent-title').value='';
+  document.getElementById('newevent-section').classList.remove('open');
   document.getElementById('comm-event').innerHTML='<option value="">없음</option>';
 
-  renderCommFeed(); renderTaskList(); renderToday(); renderEventList();
-  toast(hasFollowup?'소통 기록 + 후속 할 일이 추가되었습니다':'소통 기록이 추가되었습니다');
+  renderCommFeed(); renderTaskList(); renderToday(); renderEventBars(); renderCalendar();
+  const msgs = ['소통 기록이 추가되었습니다', hasFollowup && '할 일 생성됨', hasNewEvent && '공구 일정 등록됨'].filter(Boolean);
+  toast(msgs.join(' · '));
 }
 
 function gotoComms() {
@@ -951,6 +1439,204 @@ function gotoComms() {
 }
 function gotoTasks() {
   document.querySelector('[data-section="tasks"]').click();
+}
+
+function openTaskEdit(id) {
+  const t = S.tasks.find(t => t.id === id); if (!t) return;
+  const el = document.getElementById('task-item-' + id); if (!el) return;
+  const evOptions = S.events.filter(e => e.vendorId === t.vendorId)
+    .map(e => `<option value="${e.id}" ${t.eventId===e.id?'selected':''}>${e.title} (${evFmtDate(e)})</option>`).join('');
+  el.innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-group">
+          <label style="font-size:11px">날짜</label>
+          <input type="text" id="edit-task-date-${id}" value="${t.createdAt||''}" style="width:120px">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label style="font-size:11px">내용</label>
+          <input type="text" id="edit-task-content-${id}" value="${t.content}">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-group">
+          <label style="font-size:11px">연결 일정</label>
+          <select id="edit-task-event-${id}">
+            <option value="">없음</option>${evOptions}
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">담당자</label>
+          <select id="edit-task-assignee-${id}">
+            <option value="" ${!t.assignee?'selected':''}>없음</option>
+            <option value="김채원" ${t.assignee==='김채원'?'selected':''}>김채원</option>
+            <option value="대표님" ${t.assignee==='대표님'?'selected':''}>대표님</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content:flex-end;flex-direction:row;gap:6px;align-items:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="saveTaskEdit('${id}')">저장</button>
+          <button class="btn btn-outline btn-sm" onclick="renderTaskList()">취소</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+
+
+function saveTaskEdit(id) {
+  const t = S.tasks.find(t => t.id === id); if (!t) return;
+  const content = document.getElementById('edit-task-content-'+id).value.trim();
+  const date    = document.getElementById('edit-task-date-'+id).value.trim();
+  const eventId = document.getElementById('edit-task-event-'+id).value || null;
+  if (!content) { toast('내용을 입력해 주세요'); return; }
+  const assignee = document.getElementById('edit-task-assignee-'+id).value || null;
+  t.content   = content;
+  t.createdAt = date || t.createdAt;
+  t.eventId   = eventId;
+  t.assignee  = assignee;
+  save(); renderTaskList(); renderToday(); renderEventBars();
+  if (selectedGongguId) renderGongguDetail(selectedGongguId);
+  toast('수정되었습니다');
+}
+
+function openCommEdit(id) {
+  const c = S.comms.find(c => c.id === id); if (!c) return;
+  const el = document.getElementById('comm-item-' + id); if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-group">
+          <label style="font-size:11px">날짜</label>
+          <input type="text" id="edit-comm-date-${id}" value="${c.date}" style="width:120px">
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">유형</label>
+          <select id="edit-comm-type-${id}">
+            ${['일정','품목','이슈'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px">내용</label>
+        <textarea id="edit-comm-content-${id}" style="min-height:70px">${c.content}</textarea>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="btn btn-primary btn-sm" onclick="saveCommEdit('${id}')">저장</button>
+        <button class="btn btn-outline btn-sm" onclick="renderCommFeed()">취소</button>
+      </div>
+    </div>`;
+}
+
+function saveCommEdit(id) {
+  const c = S.comms.find(c => c.id === id); if (!c) return;
+  const content = document.getElementById('edit-comm-content-'+id).value.trim();
+  const date    = document.getElementById('edit-comm-date-'+id).value.trim();
+  const type    = document.getElementById('edit-comm-type-'+id).value;
+  if (!content) { toast('내용을 입력해 주세요'); return; }
+  c.content = content;
+  c.date    = date || c.date;
+  c.type    = type;
+  save(); renderCommFeed(); renderToday();
+  toast('수정되었습니다');
+}
+
+function deleteTask(id) {
+  if (!confirm('이 할 일을 삭제할까요?')) return;
+  S.tasks = S.tasks.filter(t => t.id !== id);
+  save(); renderTaskList(); renderToday(); renderEventBars();
+  if (selectedGongguId) renderGongguDetail(selectedGongguId);
+  toast('삭제되었습니다');
+}
+
+function deleteComm(id) {
+  if (!confirm('이 소통 기록을 삭제할까요?')) return;
+  const comm = S.comms.find(c => c.id === id);
+  if (comm && comm.followUpTaskId) {
+    S.tasks = S.tasks.filter(t => t.id !== comm.followUpTaskId);
+  }
+  S.comms = S.comms.filter(c => c.id !== id);
+  save(); renderCommFeed(); renderTaskList(); renderToday();
+  toast('삭제되었습니다');
+}
+
+function openEventEdit(id) {
+  const ev = S.events.find(e => e.id === id); if (!ev) return;
+  const el = document.getElementById('event-card-' + id) || document.getElementById('evt-bar-' + id); if (!el) return;
+  const vendorOptions = S.vendors.map(v =>
+    `<option value="${v.id}" ${ev.vendorId===v.id?'selected':''}>${v.name}</option>`).join('');
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-group">
+          <label style="font-size:11px">공구사</label>
+          <select id="edit-ev-vendor-${id}">${vendorOptions}</select>
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">시작 날짜</label>
+          <input type="text" id="edit-ev-start-${id}" value="${evStart(ev)}" placeholder="YYYY-MM-DD" style="width:120px">
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">종료 날짜 (선택)</label>
+          <input type="text" id="edit-ev-end-${id}" value="${evEnd(ev)||''}" placeholder="YYYY-MM-DD" style="width:120px">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label style="font-size:11px">일정 제목</label>
+          <input type="text" id="edit-ev-title-${id}" value="${ev.title}">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="btn btn-primary btn-sm" onclick="saveEventEdit('${id}')">저장</button>
+        <button class="btn btn-outline btn-sm" onclick="renderEventBars()">취소</button>
+      </div>
+    </div>`;
+}
+
+function saveEventEdit(id) {
+  const ev = S.events.find(e => e.id === id); if (!ev) return;
+  const startDate = document.getElementById('edit-ev-start-'+id).value.trim();
+  const endDate   = document.getElementById('edit-ev-end-'+id).value.trim() || null;
+  const title     = document.getElementById('edit-ev-title-'+id).value.trim();
+  const vendorId  = document.getElementById('edit-ev-vendor-'+id).value;
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작 날짜를 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜 형식을 확인해 주세요'); return; }
+  if (!title) { toast('일정 제목을 입력해 주세요'); return; }
+  ev.startDate = startDate; ev.endDate = endDate; ev.title = title; ev.vendorId = vendorId;
+  save(); renderCalendar(); renderEventBars(); renderToday(); renderGonggu(); renderVendorHistory();
+  toast('일정이 수정되었습니다');
+}
+
+function deleteEvent(id) {
+  if (!confirm('이 일정을 삭제할까요?')) return;
+  S.events = S.events.filter(e => e.id !== id);
+  S.tasks.forEach(t => { if (t.eventId === id) t.eventId = null; });
+  S.comms.forEach(c => { if (c.eventId === id) c.eventId = null; });
+  save(); renderCalendar(); renderEventBars(); renderToday();
+  toast('일정이 삭제되었습니다');
+}
+
+// ══════════════ ② 일정 추가 폼 ══════════════
+function initEventForm() {
+  const vSel = document.getElementById('event-vendor');
+  vSel.innerHTML = S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  document.getElementById('btn-add-event').addEventListener('click', addEvent);
+  document.getElementById('event-title').addEventListener('keydown', e=>{ if(e.key==='Enter') addEvent(); });
+}
+
+function addEvent() {
+  const vendorId  = document.getElementById('event-vendor').value;
+  const startDate = document.getElementById('event-startdate').value.trim();
+  const endDate   = document.getElementById('event-enddate').value.trim() || null;
+  const title     = document.getElementById('event-title').value.trim();
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작 날짜를 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜 형식을 확인해 주세요'); return; }
+  if (!title) { toast('일정 제목을 입력해 주세요'); return; }
+  S.events.push({ id: genId('evt'), vendorId, startDate, endDate, title });
+  save();
+  document.getElementById('event-startdate').value = '';
+  document.getElementById('event-enddate').value = '';
+  document.getElementById('event-title').value = '';
+  renderCalendar(); renderEventBars(); renderToday();
+  toast('일정이 추가되었습니다');
 }
 
 // ══════════════ 헤더 날짜 ══════════════
@@ -967,9 +1653,11 @@ function init() {
   renderHeaderDate();
   initTaskForm();
   initCommForm();
+  initEventForm();
   buildTaskFilters();
   renderToday();
-  renderVendors();
+  renderGonggu();
+  renderVendorHistory();
   renderTaskList();
   renderCommFeed();
 }
