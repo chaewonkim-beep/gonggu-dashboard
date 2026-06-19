@@ -446,7 +446,7 @@ textarea { resize: vertical; min-height: 60px; }
 <div id="toast"></div>
 
 <script>
-// ══════════════ 기본 데이터 (최종 업데이트: 2026-06-18) ══════════════
+// ══════════════ 기본 데이터 (최종 업데이트: 2026-06-19) ══════════════
 const DEFAULT_VENDORS = [
   { id: 'navita',   name: '나비타',      paused: true  }, // 당분간 진행 보류
   { id: 'chilgeun', name: '칠진사',      paused: false },
@@ -482,10 +482,11 @@ const DEFAULT_TASKS = [
   { id: 't-006', vendorId: 'chilgeun', eventId: 'evt-002', content: '콘텐츠팀에 칠진사 공구 내용 전달', urgent: true,  done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: 'c-006' },
   // 낼나 ─ 일정 확정, 목록 확인 남음
   { id: 't-002', vendorId: 'naelna',   eventId: null,      content: '낼나 메일 답변',                urgent: false, done: true,  archived: false, isDefault: true, createdAt: '2026-06-11', followUpFromCommId: null },
-  { id: 't-007', vendorId: 'naelna',   eventId: 'evt-008', content: '낼나 체험단 목록 확인',           urgent: false, done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: 'c-007' },
+  { id: 't-007', vendorId: 'naelna',   eventId: 'evt-008', content: '낼나 체험단 목록 확인',           urgent: false, done: true,  archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: 'c-007' },
+  { id: 't-010', vendorId: 'naelna',   eventId: 'evt-008', content: '낼나 공구 목록 확인 (이번 주 내 미수신 시 메일 발송)', urgent: false, done: false, archived: false, isDefault: true, createdAt: '2026-06-19', followUpFromCommId: 'c-013' },
   // 바오밥 ─ 기대평 이벤트 진행
-  { id: 't-003', vendorId: 'baobab',   eventId: 'evt-001', content: '바오밥 오픈 최종 확인',           urgent: true,  done: false, archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: 'c-004' },
-  { id: 't-004', vendorId: 'baobab',   eventId: 'evt-001', content: '오픈 링크 공유',                 urgent: false, done: false, archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: null },
+  { id: 't-003', vendorId: 'baobab',   eventId: 'evt-001', content: '바오밥 오픈 최종 확인',           urgent: true,  done: true,  archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: 'c-004' },
+  { id: 't-004', vendorId: 'baobab',   eventId: 'evt-001', content: '오픈 링크 공유',                 urgent: false, done: true,  archived: false, isDefault: true, createdAt: '2026-06-12', followUpFromCommId: null },
   { id: 't-008', vendorId: 'baobab',   eventId: 'evt-006', content: '기대평 이벤트 발표 진행',         urgent: true,  done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: null },
   { id: 't-009', vendorId: 'baobab',   eventId: 'evt-007', content: '기대평 이벤트 마감 처리',         urgent: false, done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: null },
   // JNJ ─ 협의 완료 (팩토·비상 일정 확정)
@@ -493,6 +494,10 @@ const DEFAULT_TASKS = [
 ];
 const DEFAULT_COMMS = [
   // 2026-06-18 최신 업데이트
+  // 2026-06-19 업데이트
+  { id: 'c-013', vendorId: 'naelna',   eventId: 'evt-008', date: '2026-06-19', type: '확인', content: '체험단 없음 확인. 공구 목록 확인 필요 — 이번 주 내 미수신 시 공구사에 메일 발송 예정', followUpTaskId: 't-010' },
+  { id: 'c-014', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-19', type: '완료', content: '바오밥 오픈 최종 확인 완료. 오픈 링크 공유 완료',                               followUpTaskId: null },
+  // 2026-06-18 업데이트
   { id: 'c-005', vendorId: 'navita',   eventId: null,      date: '2026-06-18', type: '정보', content: '당분간 공구 진행 않기로 답변 받음. 추후 재연락 예정',                        followUpTaskId: null },
   { id: 'c-006', vendorId: 'chilgeun', eventId: 'evt-002', date: '2026-06-18', type: '확인', content: '공구 일정·품목 확정 완료. 콘텐츠팀에 내용 전달 필요',                       followUpTaskId: 't-006' },
   { id: 'c-007', vendorId: 'naelna',   eventId: 'evt-008', date: '2026-06-18', type: '확인', content: '타임타이머 공구 일정 확정 (7/10~7/14). 체험단 목록 확인만 남음',           followUpTaskId: 't-007' },
@@ -503,8 +508,6 @@ const DEFAULT_COMMS = [
   { id: 'c-011', vendorId: 'ilpro',    eventId: 'evt-012', date: '2026-06-18', type: '정보', content: '일프로 연산 일정 일부 변경됨. 9/29~10/5로 조정 확정',                        followUpTaskId: null },
   // 이전 기록
   { id: 'c-001', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-12', type: '확인', content: '오픈 일정 최종 확인 완료, 6/15 예정대로 진행',  followUpTaskId: null },
-  { id: 'c-002', vendorId: 'chilgeun', eventId: 'evt-002', date: '2026-06-10', type: '이슈', content: '상품 이미지 누락 이슈 발생, 담당자 재촬영 요청', followUpTaskId: 't-001' },
-  { id: 'c-003', vendorId: 'naelna',   eventId: null,      date: '2026-06-09', type: '정보', content: '팩토 신규 라인업 추가 예정 통보 받음',            followUpTaskId: null },
   { id: 'c-004', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-08', type: '이슈', content: '이벤트 배너 이미지 최종 확인 필요',               followUpTaskId: 't-003' },
 ];
 const DEFAULT_PROGRESS = {
