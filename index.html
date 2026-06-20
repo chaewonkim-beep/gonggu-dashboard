@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>달콤수학 공구 관리 대시보드</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -504,6 +505,11 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <div id="toast"></div>
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(255,253,247,0.92);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+  <div style="width:36px;height:36px;border:3px solid #E8DDD0;border-top-color:#7B5C3E;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <div style="font-size:14px;color:#7B5C3E;font-weight:600;">데이터 불러오는 중...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- 캘린더 날짜 팝업 -->
 <div id="cal-popup-overlay" onclick="closeCalPopup()"></div>
@@ -516,6 +522,11 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <script>
+// ══════════════ Supabase 클라이언트 ══════════════
+const SB_URL = 'https://tvokoweialgamsyzwqyy.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2b2tvd2VpYWxnYW1zeXp3cXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MzMxMTUsImV4cCI6MjA5NzUwOTExNX0.ReMSkrfZdWU1GX9yMVHwdvx11426kaGgXtt5abqodw0';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
 // ══════════════ 기본 데이터 (최종 업데이트: 2026-06-19) ══════════════
 const DEFAULT_VENDORS = [
   { id: 'navita',   name: '나비타',      paused: true  }, // 당분간 진행 보류
@@ -599,13 +610,26 @@ const DEFAULT_PROGRESS = {
 // ══════════════ 상태 ══════════════
 const S = { vendors:[], events:[], tasks:[], comms:[], progress:{}, evtProgress:{} };
 
-function load() {
-  S.vendors  = JSON.parse(localStorage.getItem('gg2_vendors'))  || JSON.parse(JSON.stringify(DEFAULT_VENDORS));
-  S.events   = JSON.parse(localStorage.getItem('gg2_events'))   || JSON.parse(JSON.stringify(DEFAULT_EVENTS));
-  S.tasks    = JSON.parse(localStorage.getItem('gg2_tasks'))    || JSON.parse(JSON.stringify(DEFAULT_TASKS));
-  S.comms    = JSON.parse(localStorage.getItem('gg2_comms'))    || JSON.parse(JSON.stringify(DEFAULT_COMMS));
-  S.progress    = JSON.parse(localStorage.getItem('gg2_progress'))     || JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
-  S.evtProgress = JSON.parse(localStorage.getItem('gg2_evt_progress')) || JSON.parse(JSON.stringify(DEFAULT_EVENT_PROGRESS));
+async function load() {
+  try {
+    const { data, error } = await sb.from('gg_store').select('key,value');
+    if (error) throw error;
+    const map = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+    S.vendors     = map['vendors']      || JSON.parse(localStorage.getItem('gg2_vendors'))      || JSON.parse(JSON.stringify(DEFAULT_VENDORS));
+    S.events      = map['events']       || JSON.parse(localStorage.getItem('gg2_events'))       || JSON.parse(JSON.stringify(DEFAULT_EVENTS));
+    S.tasks       = map['tasks']        || JSON.parse(localStorage.getItem('gg2_tasks'))        || JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    S.comms       = map['comms']        || JSON.parse(localStorage.getItem('gg2_comms'))        || JSON.parse(JSON.stringify(DEFAULT_COMMS));
+    S.progress    = map['progress']     || JSON.parse(localStorage.getItem('gg2_progress'))     || JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
+    S.evtProgress = map['evt_progress'] || JSON.parse(localStorage.getItem('gg2_evt_progress')) || JSON.parse(JSON.stringify(DEFAULT_EVENT_PROGRESS));
+  } catch(e) {
+    console.warn('Supabase 로드 실패, 로컬 데이터 사용:', e);
+    S.vendors     = JSON.parse(localStorage.getItem('gg2_vendors'))      || JSON.parse(JSON.stringify(DEFAULT_VENDORS));
+    S.events      = JSON.parse(localStorage.getItem('gg2_events'))       || JSON.parse(JSON.stringify(DEFAULT_EVENTS));
+    S.tasks       = JSON.parse(localStorage.getItem('gg2_tasks'))        || JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    S.comms       = JSON.parse(localStorage.getItem('gg2_comms'))        || JSON.parse(JSON.stringify(DEFAULT_COMMS));
+    S.progress    = JSON.parse(localStorage.getItem('gg2_progress'))     || JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
+    S.evtProgress = JSON.parse(localStorage.getItem('gg2_evt_progress')) || JSON.parse(JSON.stringify(DEFAULT_EVENT_PROGRESS));
+  }
   migrateVendors();
   migrateEvents();
   migrateProgress();
@@ -681,12 +705,22 @@ function migrateEvents() {
   });
 }
 function save() {
-  localStorage.setItem('gg2_vendors',  JSON.stringify(S.vendors));
-  localStorage.setItem('gg2_events',   JSON.stringify(S.events));
-  localStorage.setItem('gg2_tasks',    JSON.stringify(S.tasks));
-  localStorage.setItem('gg2_comms',    JSON.stringify(S.comms));
+  // 로컬 캐시 즉시 저장
+  localStorage.setItem('gg2_vendors',      JSON.stringify(S.vendors));
+  localStorage.setItem('gg2_events',       JSON.stringify(S.events));
+  localStorage.setItem('gg2_tasks',        JSON.stringify(S.tasks));
+  localStorage.setItem('gg2_comms',        JSON.stringify(S.comms));
   localStorage.setItem('gg2_progress',     JSON.stringify(S.progress));
   localStorage.setItem('gg2_evt_progress', JSON.stringify(S.evtProgress));
+  // Supabase 백그라운드 저장
+  sb.from('gg_store').upsert([
+    { key: 'vendors',      value: S.vendors },
+    { key: 'events',       value: S.events },
+    { key: 'tasks',        value: S.tasks },
+    { key: 'comms',        value: S.comms },
+    { key: 'progress',     value: S.progress },
+    { key: 'evt_progress', value: S.evtProgress },
+  ]).then(({ error }) => { if (error) console.error('Supabase 저장 오류:', error); });
 }
 
 // ══════════════ 유틸 ══════════════
@@ -1648,8 +1682,10 @@ function renderHeaderDate() {
 }
 
 // ══════════════ 초기화 ══════════════
-function init() {
-  load();
+async function init() {
+  document.getElementById('loading-overlay').style.display = 'flex';
+  await load();
+  document.getElementById('loading-overlay').style.display = 'none';
   renderHeaderDate();
   initTaskForm();
   initCommForm();
