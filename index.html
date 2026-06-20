@@ -436,7 +436,7 @@ textarea { resize: vertical; min-height: 60px; }
             <select id="comm-type">
               <option value="일정">일정</option>
               <option value="품목">품목</option>
-              <option value="이슈">이슈</option>
+              <option value="전달">전달</option>
             </select>
           </div>
           <div class="form-group">
@@ -496,7 +496,7 @@ textarea { resize: vertical; min-height: 60px; }
         <button class="filter-btn active" data-type="all">전체</button>
         <button class="filter-btn" data-type="일정">일정</button>
         <button class="filter-btn" data-type="품목">품목</button>
-        <button class="filter-btn" data-type="이슈">이슈</button>
+        <button class="filter-btn" data-type="전달">전달</button>
       </div>
       <div class="comm-feed" id="comm-feed"></div>
     </section>
@@ -590,7 +590,7 @@ const DEFAULT_COMMS = [
   { id: 'c-011', vendorId: 'ilpro',    eventId: 'evt-012', date: '2026-06-18', type: '정보', content: '일프로 연산 일정 일부 변경됨. 9/29~10/5로 조정 확정',                        followUpTaskId: null },
   // 이전 기록
   { id: 'c-001', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-12', type: '확인', content: '오픈 일정 최종 확인 완료, 6/15 예정대로 진행',  followUpTaskId: null },
-  { id: 'c-004', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-08', type: '이슈', content: '이벤트 배너 이미지 최종 확인 필요',               followUpTaskId: 't-003' },
+  { id: 'c-004', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-08', type: '전달', content: '이벤트 배너 이미지 최종 확인 필요',               followUpTaskId: 't-003' },
 ];
 const PROGRESS_STEPS = ['일정 확정','상품 확정','샘플수령 완료','이벤트 확인','콘텐츠팀 전달','공구 오픈','판매량 공유','공구 마감'];
 const DEFAULT_EVENT_PROGRESS = {
@@ -820,7 +820,7 @@ function toast(msg) {
   setTimeout(()=>el.classList.remove('show'),2500);
 }
 function typeColor(t) {
-  return {일정:'badge-yellow',품목:'badge-brown',이슈:'badge-red'}[t]||'badge-gray';
+  return {일정:'badge-yellow',품목:'badge-brown',전달:'badge-red'}[t]||'badge-gray';
 }
 
 // ══════════════ 네비게이션 ══════════════
@@ -871,14 +871,8 @@ function renderToday() {
     const s = evStart(e), en = evEnd(e);
     return en ? (ts >= s && ts <= en) : s === ts;
   }).map(e=>e.id));
-  const weekEvIds = new Set(S.events.filter(e => {
-    const s = evStart(e), en = evEnd(e);
-    const sd = dday(s);
-    return en ? (sd > 0 && sd <= 7 && dday(en) >= 0) : (sd > 0 && sd <= 7);
-  }).map(e=>e.id));
-
   const todayTasks = S.tasks.filter(t=>!t.done&&!t.archived&&(t.eventId&&todayEvIds.has(t.eventId)));
-  const weekTasks  = S.tasks.filter(t=>!t.done&&!t.archived&&!(t.eventId&&todayEvIds.has(t.eventId))&&(t.eventId&&weekEvIds.has(t.eventId)||!t.eventId)).slice(0,8);
+  const weekTasks  = S.tasks.filter(t=>!t.done&&!t.archived&&!(t.eventId&&todayEvIds.has(t.eventId))).slice(0,8);
   const recentComms = [...S.comms].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,2);
 
   renderZone('zone-today-list', todayTasks);
@@ -1560,7 +1554,7 @@ function openCommEdit(id) {
         <div class="form-group">
           <label style="font-size:11px">유형</label>
           <select id="edit-comm-type-${id}">
-            ${['일정','품목','이슈'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
+            ${['일정','품목','전달'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
       </div>
