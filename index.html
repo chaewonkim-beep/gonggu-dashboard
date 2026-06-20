@@ -261,7 +261,6 @@ textarea { resize: vertical; min-height: 60px; }
 .followup-section { background: var(--cream2); border-radius: var(--radius-sm); padding: 12px; margin-top: 10px; display: none; }
 .followup-section.open { display: block; }
 .followup-label { font-size: 12px; font-weight: 600; color: var(--brown); margin-bottom: 8px; }
-.comm-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .comm-feed { display: flex; flex-direction: column; gap: 10px; }
 .comm-item { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; box-shadow: var(--shadow); }
 .comm-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
@@ -291,7 +290,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div id="app-body">
   <nav id="sidebar">
-    <div class="nav-item active" data-section="today"><span class="nav-icon">📋</span><span>오늘 확인</span></div>
+    <div class="nav-item active" data-section="today"><span class="nav-icon">📋</span><span>데일리 체크</span></div>
     <div class="nav-item" data-section="schedule"><span class="nav-icon">📅</span><span>공구 일정</span></div>
     <div class="nav-item" data-section="gonggu"><span class="nav-icon">📊</span><span>공구 현황</span></div>
     <div class="nav-item" data-section="vendorhist"><span class="nav-icon">🏪</span><span>공구사 현황</span></div>
@@ -303,8 +302,9 @@ textarea { resize: vertical; min-height: 60px; }
 
     <!-- ① 오늘 확인 -->
     <section id="section-today" class="section active">
-      <div class="section-title">📋 오늘 확인</div>
+      <div class="section-title">📋 데일리 체크</div>
       <div id="today-gonggu-bar"></div>
+      <div id="today-gonggu-dropdown" style="display:none;margin-bottom:20px"></div>
       <div class="today-grid">
         <div class="today-zone zone-today">
           <div class="today-zone-title">오늘 처리</div>
@@ -329,15 +329,16 @@ textarea { resize: vertical; min-height: 60px; }
         <div class="form-row">
           <div class="form-group">
             <label>공구사</label>
-            <select id="event-vendor"></select>
+            <input type="text" id="event-vendor" list="event-vendor-list" placeholder="공구사 선택 또는 새 이름 입력" style="width:160px">
+            <datalist id="event-vendor-list"></datalist>
           </div>
           <div class="form-group">
             <label>시작 날짜</label>
-            <input type="text" id="event-startdate" placeholder="YYYY-MM-DD">
+            <input type="text" id="event-startdate" placeholder="YYYY-MM-DD" data-di="1">
           </div>
           <div class="form-group">
             <label>종료 날짜 (선택)</label>
-            <input type="text" id="event-enddate" placeholder="YYYY-MM-DD">
+            <input type="text" id="event-enddate" placeholder="YYYY-MM-DD" data-di="1">
           </div>
           <div class="form-group" style="flex:1">
             <label>일정 제목</label>
@@ -401,7 +402,7 @@ textarea { resize: vertical; min-height: 60px; }
         <div class="form-row">
           <div class="form-group">
             <label>날짜</label>
-            <input type="text" id="task-date" placeholder="YYYY-MM-DD">
+            <input type="text" id="task-date" placeholder="YYYY-MM-DD" data-di="1">
           </div>
           <div class="form-group" style="flex:1">
             <label>내용</label>
@@ -437,6 +438,7 @@ textarea { resize: vertical; min-height: 60px; }
               <option value="일정">일정</option>
               <option value="품목">품목</option>
               <option value="전달">전달</option>
+              <option value="확인">확인</option>
             </select>
           </div>
           <div class="form-group">
@@ -445,7 +447,7 @@ textarea { resize: vertical; min-height: 60px; }
           </div>
           <div class="form-group">
             <label>날짜</label>
-            <input type="text" id="comm-date" placeholder="YYYY-MM-DD">
+            <input type="text" id="comm-date" placeholder="YYYY-MM-DD" data-di="1">
           </div>
         </div>
         <div class="form-group" style="margin-bottom:10px">
@@ -475,11 +477,11 @@ textarea { resize: vertical; min-height: 60px; }
           <div class="form-row">
             <div class="form-group">
               <label>시작 날짜</label>
-              <input type="text" id="newevent-date" placeholder="YYYY-MM-DD">
+              <input type="text" id="newevent-date" placeholder="YYYY-MM-DD" data-di="1">
             </div>
             <div class="form-group">
               <label>종료 날짜 (선택)</label>
-              <input type="text" id="newevent-enddate" placeholder="YYYY-MM-DD">
+              <input type="text" id="newevent-enddate" placeholder="YYYY-MM-DD" data-di="1">
             </div>
             <div class="form-group" style="flex:1">
               <label>일정 제목</label>
@@ -491,12 +493,6 @@ textarea { resize: vertical; min-height: 60px; }
       </div>
       <div style="margin-bottom:8px">
         <input type="text" id="comm-search" placeholder="내용 또는 공구사 검색" style="width:100%;max-width:320px">
-      </div>
-      <div class="comm-filters">
-        <button class="filter-btn active" data-type="all">전체</button>
-        <button class="filter-btn" data-type="일정">일정</button>
-        <button class="filter-btn" data-type="품목">품목</button>
-        <button class="filter-btn" data-type="전달">전달</button>
       </div>
       <div class="comm-feed" id="comm-feed"></div>
     </section>
@@ -527,8 +523,12 @@ const SB_URL = 'https://tvokoweialgamsyzwqyy.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2b2tvd2VpYWxnYW1zeXp3cXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MzMxMTUsImV4cCI6MjA5NzUwOTExNX0.ReMSkrfZdWU1GX9yMVHwdvx11426kaGgXtt5abqodw0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+document.addEventListener('focus', e => {
+  if (e.target.tagName === 'INPUT' && e.target.dataset.di && !e.target.value)
+    e.target.value = new Date().getFullYear() + '-';
+}, true);
 document.addEventListener('blur', e => {
-  if (e.target.tagName === 'INPUT' && (e.target.placeholder || '').includes('YYYY-MM-DD'))
+  if (e.target.tagName === 'INPUT' && e.target.dataset.di)
     e.target.value = parseSmartDate(e.target.value);
 }, true);
 
@@ -739,11 +739,12 @@ function ddayLabel(ds) { const n=dday(ds); return n===0?'D-Day':n>0?`D-${n}`:`D+
 function fmtDate(ds) { const [,m,d]=ds.split('-'); return `${m}/${d}`; }
 function parseSmartDate(val) {
   val = val.trim();
-  if (!val) return val;
+  if (!val || val === new Date().getFullYear() + '-') return '';
   if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
   const y = new Date().getFullYear();
   if (/^\d{4}$/.test(val)) return `${y}-${val.slice(0,2)}-${val.slice(2,4)}`;
   if (/^\d{8}$/.test(val)) return `${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`;
+  if (/^\d{4}-\d{4}$/.test(val)) return `${val.slice(0,4)}-${val.slice(5,7)}-${val.slice(7,9)}`;
   return val;
 }
 function vendorName(id) { const v=S.vendors.find(v=>v.id===id); return v?v.name:id; }
@@ -820,7 +821,7 @@ function toast(msg) {
   setTimeout(()=>el.classList.remove('show'),2500);
 }
 function typeColor(t) {
-  return {일정:'badge-yellow',품목:'badge-brown',전달:'badge-red'}[t]||'badge-gray';
+  return {일정:'badge-brown',품목:'badge-brown',전달:'badge-brown',확인:'badge-brown'}[t]||'badge-gray';
 }
 
 // ══════════════ 네비게이션 ══════════════
@@ -853,16 +854,16 @@ function renderTodayGongguBar() {
   const all = [...ongoing.map(e=>({e,type:'ongoing'})), ...next.map(e=>({e,type:'next'}))];
   if (!all.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+  el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
     ${all.map(({e,type}) => `
-    <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-left:3px solid ${type==='ongoing'?'var(--green)':'var(--orange)'};border-radius:var(--radius-sm);padding:10px 14px;box-shadow:var(--shadow)">
+    <div onclick="toggleGongguDropdown('${e.id}')" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-left:3px solid ${type==='ongoing'?'var(--green)':'var(--orange)'};border-radius:var(--radius-sm);padding:10px 14px;box-shadow:var(--shadow);cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--cream2)'" onmouseout="this.style.background='#fff'">
       <span style="font-size:11px;font-weight:700;color:${type==='ongoing'?'#2E7D32':'#A04010'}">${type==='ongoing'?'진행 중':'다음'}</span>
       <span style="font-size:14px;font-weight:600;color:var(--text-dark)">${e.title}</span>
       <span style="font-size:12px;color:var(--text-light)">${evFmtDate(e)}</span>
       <span class="badge ${evBadgeCls(e)}">${evDdayLabel(e)}</span>
+      <span style="font-size:11px;color:var(--text-light)">▾</span>
     </div>`).join('')}
-  </div>
-  <hr style="border:none;border-top:1px solid var(--border);margin-bottom:20px">`;
+  </div>`;
 }
 
 function renderToday() {
@@ -968,8 +969,7 @@ function renderCalendar() {
       }
       if (dow === 0) cls.push('sunday');
       if (dow === 6) cls.push('saturday');
-      const click = ri || isToday ? `onclick="calDayClick('${ds}')"` : '';
-      html += `<div class="${cls.join(' ')}" style="flex:1" ${click}>${d}</div>`;
+      html += `<div class="${cls.join(' ')}" style="flex:1;cursor:pointer" onclick="calDayClick('${ds}')">${d}</div>`;
     }
     html += '</div>';
   }
@@ -1029,7 +1029,14 @@ function calDayClick(ds) {
     const s = evStart(e), en = evEnd(e);
     return en ? (ds >= s && ds <= en) : s === ds;
   });
-  if (!eventsOnDay.length) return;
+  if (!eventsOnDay.length) {
+    document.querySelector('[data-section="schedule"]').click();
+    const f = document.getElementById('event-startdate');
+    f.value = ds;
+    f.focus();
+    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
 
   const [, m, d] = ds.split('-');
   document.getElementById('cal-popup-date').textContent = `${parseInt(m)}월 ${parseInt(d)}일`;
@@ -1189,6 +1196,73 @@ function renderGongguDetail(evId) {
   panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
+let _openGongguDropdown = null;
+function toggleGongguDropdown(evId) {
+  const panel = document.getElementById('today-gonggu-dropdown');
+  if (_openGongguDropdown === evId) {
+    _openGongguDropdown = null;
+    panel.innerHTML = ''; panel.style.display = 'none'; return;
+  }
+  _openGongguDropdown = evId;
+  panel.style.display = 'block';
+  renderGongguDetailInline(evId, panel);
+}
+function renderGongguDetailInline(evId, el) {
+  const ev = S.events.find(e => e.id === evId); if (!ev) return;
+  const prog = getEvProg(evId);
+  const done = prog.checked.filter(Boolean).length;
+  const pct  = Math.round(done / 8 * 100);
+  const rTasks = S.tasks.filter(t=>t.eventId===evId&&!t.done&&!t.archived);
+  const rComms = [...S.comms].filter(c=>c.eventId===evId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  el.innerHTML = `<div class="card" style="border:1.5px solid var(--orange)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div>
+        <div class="detail-panel-title" style="margin-bottom:4px">${ev.title}</div>
+        <div style="font-size:13px;color:var(--text-mid);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="today-vendor-tag">${vendorName(ev.vendorId)}</span>
+          <span>${evFmtDate(ev)}</span>
+          <span class="badge ${evBadgeCls(ev)}">${evDdayLabel(ev)}</span>
+        </div>
+      </div>
+      <button onclick="toggleGongguDropdown('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-label">진행 단계</div>
+      <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/8단계)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+        ${PROGRESS_STEPS.map((s,i)=>`
+          <label class="step-item ${prog.checked[i]?'checked':''}">
+            <input type="checkbox" ${prog.checked[i]?'checked':''} onchange="toggleEvStep('${evId}',${i},this.checked)">
+            <span>${s}</span>
+          </label>`).join('')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+      <div class="detail-section">
+        <div class="detail-section-label">남은 할 일</div>
+        ${rTasks.length
+          ? rTasks.map(t=>`<div class="detail-task-item"><input type="checkbox" onchange="toggleTaskDone('${t.id}',this.checked)"><span style="font-size:13px">${t.content}</span></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-label">최근 소통</div>
+        ${rComms.length
+          ? rComms.map(c=>`<div class="detail-comm-item"><span class="badge ${typeColor(c.type)}">${c.type}</span> <span style="margin-left:4px">${fmtDate(c.date)} ${c.content.length>20?c.content.slice(0,20)+'…':c.content}</span></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+    </div>
+    ${prog.links.length ? `
+    <div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="detail-section-label" style="margin-bottom:10px">공구 상세정보 링크</div>
+      ${prog.links.map(lk=>`
+        <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px">
+          <a href="${lk.url}" target="_blank" style="flex:1;font-size:13px;color:var(--brown);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${lk.title}</a>
+        </div>`).join('')}
+    </div>` : ''}
+  </div>`;
+}
+
 function addEvLink(evId) {
   const title = document.getElementById('ev-link-title-'+evId).value.trim();
   const url   = document.getElementById('ev-link-url-'+evId).value.trim();
@@ -1209,6 +1283,7 @@ function toggleEvStep(evId, idx, checked) {
   const prog = getEvProg(evId);
   prog.checked[idx] = checked;
   save(); renderGonggu(); renderGongguDetail(evId); renderToday();
+  if (_openGongguDropdown === evId) renderGongguDetailInline(evId, document.getElementById('today-gonggu-dropdown'));
 }
 
 // ══════════════ ④ 공구사 현황 (누적 이력) ══════════════
@@ -1227,8 +1302,17 @@ function renderVendorHistory() {
     return `
     <div class="card" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div style="font-size:16px;font-weight:700;color:var(--brown)">${v.name}</div>
-        <span class="badge ${v.paused?'badge-gray':'badge-green'}">${v.paused?'보류':'활성'}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:16px;font-weight:700;color:var(--brown)">${v.name}</div>
+          <span class="badge ${v.paused?'badge-gray':'badge-green'}">${v.paused?'보류':'활성'}</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          ${v.paused
+            ? `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">활성화</button>
+               <button onclick="deleteVendorPermanent('${v.id}')" class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none">삭제</button>`
+            : `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">보류</button>`
+          }
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div>
@@ -1257,6 +1341,26 @@ function renderVendorHistory() {
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleVendorPaused(id) {
+  const v = S.vendors.find(v=>v.id===id); if (!v) return;
+  v.paused = !v.paused;
+  save(); refreshVendorSelects(); renderVendorHistory(); renderToday();
+  toast(v.paused ? `"${v.name}" 보류 처리됨` : `"${v.name}" 활성화됨`);
+}
+function deleteVendorPermanent(id) {
+  const v = S.vendors.find(v=>v.id===id); if (!v) return;
+  if (!confirm(`"${v.name}" 공구사와 모든 이력을 영구 삭제합니다. 계속할까요?`)) return;
+  const evIds = S.events.filter(e=>e.vendorId===id).map(e=>e.id);
+  S.vendors = S.vendors.filter(v=>v.id!==id);
+  S.events  = S.events.filter(e=>e.vendorId!==id);
+  S.tasks   = S.tasks.filter(t=>t.vendorId!==id);
+  S.comms   = S.comms.filter(c=>c.vendorId!==id);
+  evIds.forEach(eid=>delete S.evtProgress[eid]);
+  delete S.progress[id];
+  save(); refreshVendorSelects(); renderVendorHistory(); renderGonggu(); renderToday(); renderTaskList(); renderCommFeed();
+  toast(`"${v.name}" 영구 삭제됨`);
 }
 
 // ══════════════ ④ 할 일 ══════════════
@@ -1351,6 +1455,7 @@ function toggleTaskDone(id, checked) {
   if (checked) t.archived=true;
   save(); renderTaskList(); renderToday();
   if (selectedGongguId) renderGongguDetail(selectedGongguId);
+  if (_openGongguDropdown) renderGongguDetailInline(_openGongguDropdown, document.getElementById('today-gonggu-dropdown'));
 }
 
 function archiveTask(id) {
@@ -1365,7 +1470,7 @@ function restoreTask(id) {
 }
 
 // ══════════════ ⑤ 소통 기록 ══════════════
-let commFilterType='all', commSearch='';
+let commSearch='';
 
 function initCommForm() {
   document.getElementById('comm-date').value = todayStr();
@@ -1384,19 +1489,11 @@ function initCommForm() {
     document.getElementById('newevent-section').classList.toggle('open', this.checked);
   });
   document.getElementById('btn-add-comm').addEventListener('click', addComm);
-  document.querySelectorAll('.comm-filters .filter-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      commFilterType=btn.dataset.type;
-      document.querySelectorAll('.comm-filters .filter-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active'); renderCommFeed();
-    });
-  });
 }
 
 function renderCommFeed() {
   const el = document.getElementById('comm-feed');
   let comms = [...S.comms].sort((a,b)=>b.date.localeCompare(a.date));
-  if (commFilterType!=='all') comms=comms.filter(c=>c.type===commFilterType);
   if (commSearch) {
     const q = commSearch.toLowerCase();
     comms = comms.filter(c => c.content.toLowerCase().includes(q) || vendorName(c.vendorId).toLowerCase().includes(q));
@@ -1447,7 +1544,7 @@ function addComm() {
   const newEventEndDate = document.getElementById('newevent-enddate').value.trim() || null;
   const newEventTitle   = document.getElementById('newevent-title').value.trim();
   if (hasNewEvent) {
-    if (!newEventDate || !/^\d{4}-\d{2}-\d{2}$/.test(newEventDate)) { toast('일정 시작 날짜를 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
+    if (!newEventDate || !/^\d{4}-\d{2}-\d{2}$/.test(newEventDate)) { toast('일정 시작 날짜를 입력해 주세요 (예: 0307)'); return; }
     if (!newEventTitle) { toast('일정 제목을 입력해 주세요'); return; }
     const newEvId = genId('evt');
     S.events.push({ id: newEvId, vendorId, startDate: newEventDate, endDate: newEventEndDate, title: newEventTitle });
@@ -1493,7 +1590,7 @@ function openTaskEdit(id) {
       <div class="form-row" style="margin-bottom:0">
         <div class="form-group">
           <label style="font-size:11px">날짜</label>
-          <input type="text" id="edit-task-date-${id}" value="${t.createdAt||''}" style="width:120px">
+          <input type="text" id="edit-task-date-${id}" value="${t.createdAt||''}" placeholder="YYYY-MM-DD" data-di="1" style="width:120px">
         </div>
         <div class="form-group" style="flex:1">
           <label style="font-size:11px">내용</label>
@@ -1549,12 +1646,12 @@ function openCommEdit(id) {
       <div class="form-row" style="margin-bottom:0">
         <div class="form-group">
           <label style="font-size:11px">날짜</label>
-          <input type="text" id="edit-comm-date-${id}" value="${c.date}" style="width:120px">
+          <input type="text" id="edit-comm-date-${id}" value="${c.date}" placeholder="YYYY-MM-DD" data-di="1" style="width:120px">
         </div>
         <div class="form-group">
           <label style="font-size:11px">유형</label>
           <select id="edit-comm-type-${id}">
-            ${['일정','품목','전달'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
+            ${['일정','품목','전달','확인'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -1615,11 +1712,11 @@ function openEventEdit(id) {
         </div>
         <div class="form-group">
           <label style="font-size:11px">시작 날짜</label>
-          <input type="text" id="edit-ev-start-${id}" value="${evStart(ev)}" placeholder="YYYY-MM-DD" style="width:120px">
+          <input type="text" id="edit-ev-start-${id}" value="${evStart(ev)}" placeholder="YYYY-MM-DD" data-di="1" style="width:120px">
         </div>
         <div class="form-group">
           <label style="font-size:11px">종료 날짜 (선택)</label>
-          <input type="text" id="edit-ev-end-${id}" value="${evEnd(ev)||''}" placeholder="YYYY-MM-DD" style="width:120px">
+          <input type="text" id="edit-ev-end-${id}" value="${evEnd(ev)||''}" placeholder="YYYY-MM-DD" data-di="1" style="width:120px">
         </div>
         <div class="form-group" style="flex:1">
           <label style="font-size:11px">일정 제목</label>
@@ -1639,8 +1736,8 @@ function saveEventEdit(id) {
   const endDate   = document.getElementById('edit-ev-end-'+id).value.trim() || null;
   const title     = document.getElementById('edit-ev-title-'+id).value.trim();
   const vendorId  = document.getElementById('edit-ev-vendor-'+id).value;
-  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작 날짜를 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
-  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜 형식을 확인해 주세요'); return; }
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작 날짜를 입력해 주세요 (예: 0307)'); return; }
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜를 확인해 주세요 (예: 0322)'); return; }
   if (!title) { toast('일정 제목을 입력해 주세요'); return; }
   ev.startDate = startDate; ev.endDate = endDate; ev.title = title; ev.vendorId = vendorId;
   save(); renderCalendar(); renderEventBars(); renderToday(); renderGonggu(); renderVendorHistory();
@@ -1658,27 +1755,47 @@ function deleteEvent(id) {
 
 // ══════════════ ② 일정 추가 폼 ══════════════
 function initEventForm() {
-  const vSel = document.getElementById('event-vendor');
-  vSel.innerHTML = S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  document.getElementById('event-vendor-list').innerHTML = S.vendors.map(v=>`<option value="${v.name}">`).join('');
   document.getElementById('btn-add-event').addEventListener('click', addEvent);
   document.getElementById('event-title').addEventListener('keydown', e=>{ if(e.key==='Enter') addEvent(); });
 }
+function refreshVendorSelects() {
+  document.getElementById('event-vendor-list').innerHTML = S.vendors.map(v=>`<option value="${v.name}">`).join('');
+  const tv = document.getElementById('task-vendor');
+  const tvVal = tv.value;
+  tv.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  tv.value = tvVal;
+  const cv = document.getElementById('comm-vendor');
+  const cvVal = cv.value;
+  cv.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  cv.value = cvVal;
+}
 
 function addEvent() {
-  const vendorId  = document.getElementById('event-vendor').value;
-  const startDate = document.getElementById('event-startdate').value.trim();
-  const endDate   = document.getElementById('event-enddate').value.trim() || null;
-  const title     = document.getElementById('event-title').value.trim();
-  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작 날짜를 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
-  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜 형식을 확인해 주세요'); return; }
+  const vendorInput = document.getElementById('event-vendor').value.trim();
+  const startDate   = document.getElementById('event-startdate').value.trim();
+  const endDate     = document.getElementById('event-enddate').value.trim() || null;
+  const title       = document.getElementById('event-title').value.trim();
+  if (!vendorInput) { toast('공구사를 입력해 주세요'); return; }
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작 날짜를 입력해 주세요 (예: 0307)'); return; }
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜를 확인해 주세요 (예: 0322)'); return; }
   if (!title) { toast('일정 제목을 입력해 주세요'); return; }
-  S.events.push({ id: genId('evt'), vendorId, startDate, endDate, title });
+  let vendor = S.vendors.find(v => v.name === vendorInput);
+  const isNew = !vendor;
+  if (isNew) {
+    vendor = { id: genId('v'), name: vendorInput, paused: false };
+    S.vendors.push(vendor);
+    refreshVendorSelects();
+    renderVendorHistory();
+  }
+  S.events.push({ id: genId('evt'), vendorId: vendor.id, startDate, endDate, title });
   save();
+  document.getElementById('event-vendor').value = '';
   document.getElementById('event-startdate').value = '';
   document.getElementById('event-enddate').value = '';
   document.getElementById('event-title').value = '';
   renderCalendar(); renderEventBars(); renderToday();
-  toast('일정이 추가되었습니다');
+  toast(isNew ? `"${vendorInput}" 공구사 등록 후 일정이 추가되었습니다` : '일정이 추가되었습니다');
 }
 
 // ══════════════ 헤더 날짜 ══════════════
