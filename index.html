@@ -527,6 +527,11 @@ const SB_URL = 'https://tvokoweialgamsyzwqyy.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2b2tvd2VpYWxnYW1zeXp3cXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MzMxMTUsImV4cCI6MjA5NzUwOTExNX0.ReMSkrfZdWU1GX9yMVHwdvx11426kaGgXtt5abqodw0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+document.addEventListener('blur', e => {
+  if (e.target.tagName === 'INPUT' && (e.target.placeholder || '').includes('YYYY-MM-DD'))
+    e.target.value = parseSmartDate(e.target.value);
+}, true);
+
 // ══════════════ 기본 데이터 (최종 업데이트: 2026-06-19) ══════════════
 const DEFAULT_VENDORS = [
   { id: 'navita',   name: '나비타',      paused: true  }, // 당분간 진행 보류
@@ -732,6 +737,15 @@ function todayStr() {
 function dday(ds)   { const d = new Date(ds); d.setHours(0,0,0,0); return Math.round((d-TODAY)/86400000); }
 function ddayLabel(ds) { const n=dday(ds); return n===0?'D-Day':n>0?`D-${n}`:`D+${Math.abs(n)}`; }
 function fmtDate(ds) { const [,m,d]=ds.split('-'); return `${m}/${d}`; }
+function parseSmartDate(val) {
+  val = val.trim();
+  if (!val) return val;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  const y = new Date().getFullYear();
+  if (/^\d{4}$/.test(val)) return `${y}-${val.slice(0,2)}-${val.slice(2,4)}`;
+  if (/^\d{8}$/.test(val)) return `${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`;
+  return val;
+}
 function vendorName(id) { const v=S.vendors.find(v=>v.id===id); return v?v.name:id; }
 
 // ── 이벤트 범위 헬퍼 ──
