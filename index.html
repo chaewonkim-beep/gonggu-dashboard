@@ -228,6 +228,7 @@ textarea { resize: vertical; min-height: 60px; }
 .progress-bar-wrap { background: var(--cream2); border-radius: 6px; height: 8px; overflow: hidden; margin-bottom: 6px; }
 .progress-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--yellow), var(--orange)); transition: width 0.4s; }
 .progress-label { font-size: 12px; color: var(--text-light); }
+.sales-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #5DB87A, #3A9A5C); transition: width 0.4s; }
 #vendor-detail-panel { background: #fff; border: 1.5px solid var(--orange); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow-md); display: none; }
 #vendor-detail-panel.open { display: block; }
 .detail-panel-title { font-size: 17px; font-weight: 700; color: var(--brown); margin-bottom: 18px; }
@@ -841,8 +842,9 @@ function eventById(id)  { return S.events.find(e=>e.id===id); }
 function getEvProg(evId) {
   if (!S.evtProgress[evId]) S.evtProgress[evId] = { checked: new Array(PROGRESS_STEPS.length).fill(false), links: [] };
   if (!S.evtProgress[evId].links) S.evtProgress[evId].links = [];
-  if (S.evtProgress[evId].sales      == null) S.evtProgress[evId].sales      = '';
-  if (S.evtProgress[evId].commission == null) S.evtProgress[evId].commission = '';
+  if (S.evtProgress[evId].sales       == null) S.evtProgress[evId].sales       = '';
+  if (S.evtProgress[evId].commission  == null) S.evtProgress[evId].commission  = '';
+  if (S.evtProgress[evId].salesTarget == null) S.evtProgress[evId].salesTarget = '';
   if (S.evtProgress[evId].checked.length < PROGRESS_STEPS.length)
     S.evtProgress[evId].checked = [...S.evtProgress[evId].checked, ...new Array(PROGRESS_STEPS.length - S.evtProgress[evId].checked.length).fill(false)];
   return S.evtProgress[evId];
@@ -1159,6 +1161,11 @@ function renderGonggu() {
     const done = prog.checked.filter(Boolean).length;
     const pct  = Math.round(done / PROGRESS_STEPS.length * 100);
     const isActive = evIsActive(ev);
+    const sales  = parseFloat(prog.sales)       || 0;
+    const target = parseFloat(prog.salesTarget) || 0;
+    const salesPct = target > 0 ? Math.min(Math.round(sales / target * 100), 100) : 0;
+    const settle = sales * ((parseFloat(prog.commission) || 0) / 100);
+    const hasSales = sales > 0 || target > 0;
     return `
     <div class="vendor-card ${selectedGongguId===ev.id?'selected':''} ${!isActive?'paused':''}" onclick="selectGonggu('${ev.id}')">
       <div class="vendor-name" style="font-size:13px;margin-bottom:4px">${ev.title}</div>
@@ -1168,7 +1175,12 @@ function renderGonggu() {
         <span class="badge ${isActive?evBadgeCls(ev):'badge-gray'}" style="font-size:10px">${isActive?evDdayLabel(ev):'종료'}</span>
       </div>
       <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      <div class="progress-label" style="margin-top:4px">${pct}% · ${done}/${PROGRESS_STEPS.length}단계</div>
+      <div class="progress-label" style="margin-top:4px;margin-bottom:${hasSales?'10':'0'}px">${pct}% · ${done}/${PROGRESS_STEPS.length}단계</div>
+      ${sales ? `
+      <div style="border-top:1px solid var(--cream2);padding-top:8px;display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:11px;color:var(--text-light)">매출</span>
+        <span style="font-size:12px;font-weight:700;color:#3A9A5C">${Math.round(sales).toLocaleString('ko-KR')}원</span>
+      </div>` : ''}
     </div>`;
   }).join('');
 
@@ -1247,7 +1259,13 @@ function renderGongguDetail(evId) {
     </div>
     <div class="detail-section" style="margin-bottom:12px">
       <div class="detail-section-label" style="margin-bottom:10px">매출 현황</div>
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
+        <div class="form-group">
+          <label style="font-size:11px">목표 매출 (원)</label>
+          <input type="number" id="ev-target-${evId}" value="${prog.salesTarget}" placeholder="0"
+            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
+            oninput="updateSettlement('${evId}')">
+        </div>
         <div class="form-group">
           <label style="font-size:11px">총 매출 (원)</label>
           <input type="number" id="ev-sales-${evId}" value="${prog.sales}" placeholder="0"
@@ -1267,6 +1285,7 @@ function renderGongguDetail(evId) {
           </div>
         </div>
       </div>
+      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>
     </div>
     <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border)">
       <div class="detail-section-label">진행 단계</div>
@@ -1351,7 +1370,13 @@ function renderGongguDetailInline(evId, el) {
     </div>
     <div class="detail-section" style="margin-bottom:12px">
       <div class="detail-section-label" style="margin-bottom:10px">매출 현황</div>
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
+        <div class="form-group">
+          <label style="font-size:11px">목표 매출 (원)</label>
+          <input type="number" id="ev-target-${evId}" value="${prog.salesTarget}" placeholder="0"
+            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
+            oninput="updateSettlement('${evId}')">
+        </div>
         <div class="form-group">
           <label style="font-size:11px">총 매출 (원)</label>
           <input type="number" id="ev-sales-${evId}" value="${prog.sales}" placeholder="0"
@@ -1371,6 +1396,7 @@ function renderGongguDetailInline(evId, el) {
           </div>
         </div>
       </div>
+      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>
     </div>
     <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border)">
       <div class="detail-section-label">진행 단계</div>
@@ -1409,6 +1435,24 @@ function renderGongguDetailInline(evId, el) {
   </div>`;
 }
 
+function renderSalesBarHtml(prog) {
+  const sales  = parseFloat(prog.sales)       || 0;
+  const target = parseFloat(prog.salesTarget) || 0;
+  if (!sales && !target) return '';
+  const pct = target > 0 ? Math.min(Math.round(sales / target * 100), 100) : 0;
+  const settle = sales * ((parseFloat(prog.commission) || 0) / 100);
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+      <span style="font-size:12px;color:var(--text-light)">매출 달성률</span>
+      <span style="font-size:13px;font-weight:700;color:#3A9A5C">${sales ? Math.round(sales).toLocaleString('ko-KR')+'원' : '—'}${target ? ` / 목표 ${Math.round(target).toLocaleString('ko-KR')}원` : ''}</span>
+    </div>
+    ${target ? `<div class="progress-bar-wrap" style="height:7px;margin-bottom:4px"><div class="sales-bar-fill" style="width:${pct}%"></div></div>
+    <div style="display:flex;justify-content:space-between">
+      <span style="font-size:11px;color:var(--text-light)">${pct}% 달성</span>
+      ${settle ? `<span style="font-size:11px;color:var(--text-light)">정산 ${Math.round(settle).toLocaleString('ko-KR')}원</span>` : ''}
+    </div>` : (settle ? `<div style="font-size:11px;color:var(--text-light)">정산 ${Math.round(settle).toLocaleString('ko-KR')}원</div>` : '')}`;
+}
+
 function calcSettle(sales, commission) {
   const s = parseFloat(sales), c = parseFloat(commission);
   if (!s || isNaN(s)) return '—';
@@ -1417,10 +1461,13 @@ function calcSettle(sales, commission) {
 }
 function updateSettlement(evId) {
   const prog = getEvProg(evId);
-  prog.sales      = document.getElementById('ev-sales-'+evId).value;
-  prog.commission = document.getElementById('ev-comm-'+evId).value;
+  prog.salesTarget = document.getElementById('ev-target-'+evId)?.value ?? prog.salesTarget;
+  prog.sales       = document.getElementById('ev-sales-'+evId).value;
+  prog.commission  = document.getElementById('ev-comm-'+evId).value;
   document.getElementById('ev-settle-'+evId).textContent = calcSettle(prog.sales, prog.commission);
-  save();
+  const barEl = document.getElementById('ev-sales-bar-'+evId);
+  if (barEl) barEl.innerHTML = renderSalesBarHtml(prog);
+  save(); renderGonggu();
 }
 
 function addEvLink(evId) {
