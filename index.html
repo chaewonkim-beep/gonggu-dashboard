@@ -172,6 +172,17 @@ textarea { resize: vertical; min-height: 60px; }
 .cal-day.range-fill.range-start { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
 .cal-day.range-fill.range-end   { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
 
+/* ─── 공구 이벤트 팝업 ─── */
+#ev-popup-overlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(61,43,31,0.25); }
+#ev-popup {
+  display:none; position:fixed; z-index:201;
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  background:#fff; border-radius:var(--radius); padding:24px;
+  min-width:320px; max-width:440px; width:92%;
+  box-shadow:0 8px 32px rgba(123,92,62,0.22); border:1px solid var(--border);
+  max-height:80vh; overflow-y:auto;
+}
+
 /* ─── 캘린더 팝업 ─── */
 #cal-popup-overlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(61,43,31,0.25); }
 #cal-popup {
@@ -284,7 +295,10 @@ textarea { resize: vertical; min-height: 60px; }
 <body>
 
 <header id="app-header">
-  <h1>달콤수학 공구 관리</h1>
+  <h1 style="display:flex;align-items:center;gap:10px">
+    <img src="logo.png" alt="달콤수학 로고" style="height:1em;width:auto;display:block">
+    달콤수학 공구 관리
+  </h1>
   <div id="header-date"></div>
 </header>
 
@@ -307,15 +321,15 @@ textarea { resize: vertical; min-height: 60px; }
       <div id="today-gonggu-dropdown" style="display:none;margin-bottom:20px"></div>
       <div class="today-grid">
         <div class="today-zone zone-today">
-          <div class="today-zone-title">오늘 처리</div>
+          <div class="today-zone-title">오늘 할 일</div>
           <div id="zone-today-list"></div>
         </div>
         <div class="today-zone zone-week">
-          <div class="today-zone-title">이번 주 처리</div>
+          <div class="today-zone-title">이번 주 할 일</div>
           <div id="zone-week-list"></div>
         </div>
         <div class="today-zone zone-issue">
-          <div class="today-zone-title">최근 소통</div>
+          <div class="today-zone-title" id="zone-sales-title">이번 달 매출</div>
           <div id="zone-issue-list"></div>
         </div>
       </div>
@@ -507,6 +521,22 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
+<!-- 공구 이벤트 팝업 -->
+<div id="ev-popup-overlay" onclick="closeEvPopup()"></div>
+<div id="ev-popup">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+    <div>
+      <div id="ev-popup-title" style="font-size:17px;font-weight:700;color:var(--brown);margin-bottom:4px"></div>
+      <div id="ev-popup-meta" style="font-size:13px;color:var(--text-mid);display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
+    </div>
+    <button onclick="closeEvPopup()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light);flex-shrink:0">✕</button>
+  </div>
+  <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px">
+    <div class="detail-section-label" style="margin-bottom:10px">정산 금액</div>
+    <div id="ev-popup-sales"></div>
+  </div>
+</div>
+
 <!-- 캘린더 날짜 팝업 -->
 <div id="cal-popup-overlay" onclick="closeCalPopup()"></div>
 <div id="cal-popup">
@@ -592,7 +622,7 @@ const DEFAULT_COMMS = [
   { id: 'c-001', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-12', type: '확인', content: '오픈 일정 최종 확인 완료, 6/15 예정대로 진행',  followUpTaskId: null },
   { id: 'c-004', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-08', type: '전달', content: '이벤트 배너 이미지 최종 확인 필요',               followUpTaskId: 't-003' },
 ];
-const PROGRESS_STEPS = ['일정 확정','상품 확정','샘플수령 완료','이벤트 확인','콘텐츠팀 전달','공구 오픈','판매량 공유','공구 마감'];
+const PROGRESS_STEPS = ['일정 확정','상품 확정','샘플수령 완료','이벤트 확인','콘텐츠팀 전달','공구 오픈','판매량 공유','자료나눔 신청서 확인','공구 마감'];
 const DEFAULT_EVENT_PROGRESS = {
   'evt-001': { checked:[true, true, true, true, true, true, false, false] },
   'evt-002': { checked:[true, true, false,false,false,false,false,false] },
@@ -695,6 +725,7 @@ function migrateEvents() {
     ...e,
     startDate: e.startDate || e.date || '',
     endDate:   'endDate' in e ? e.endDate : null,
+    archived:  e.archived || false,
   }));
   // 기존 시작/종료 쌍 통합
   [
@@ -808,8 +839,12 @@ function buildEvDateSet() {
 }
 function eventById(id)  { return S.events.find(e=>e.id===id); }
 function getEvProg(evId) {
-  if (!S.evtProgress[evId]) S.evtProgress[evId] = { checked: new Array(8).fill(false), links: [] };
+  if (!S.evtProgress[evId]) S.evtProgress[evId] = { checked: new Array(PROGRESS_STEPS.length).fill(false), links: [] };
   if (!S.evtProgress[evId].links) S.evtProgress[evId].links = [];
+  if (S.evtProgress[evId].sales      == null) S.evtProgress[evId].sales      = '';
+  if (S.evtProgress[evId].commission == null) S.evtProgress[evId].commission = '';
+  if (S.evtProgress[evId].checked.length < PROGRESS_STEPS.length)
+    S.evtProgress[evId].checked = [...S.evtProgress[evId].checked, ...new Array(PROGRESS_STEPS.length - S.evtProgress[evId].checked.length).fill(false)];
   return S.evtProgress[evId];
 }
 function taskById(id)   { return S.tasks.find(t=>t.id===id); }
@@ -868,36 +903,55 @@ function renderTodayGongguBar() {
 
 function renderToday() {
   const ts = todayStr();
-  const todayEvIds = new Set(S.events.filter(e => {
-    const s = evStart(e), en = evEnd(e);
-    return en ? (ts >= s && ts <= en) : s === ts;
-  }).map(e=>e.id));
-  const todayTasks = S.tasks.filter(t=>!t.done&&!t.archived&&(t.eventId&&todayEvIds.has(t.eventId)));
-  const weekTasks  = S.tasks.filter(t=>!t.done&&!t.archived&&!(t.eventId&&todayEvIds.has(t.eventId))).slice(0,8);
-  const recentComms = [...S.comms].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,2);
-
-  renderZone('zone-today-list', todayTasks);
-  renderZone('zone-week-list',  weekTasks);
-  renderRecentComms(recentComms);
+  const todayTasks = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate <= ts);
+  const weekTasks  = S.tasks.filter(t => !t.done && !t.archived && (!t.dueDate || t.dueDate > ts)).slice(0, 8);
+  renderZone('zone-today-list', todayTasks, false);
+  renderZone('zone-week-list',  weekTasks, true);
+  renderMonthlySales();
   renderTodayGongguBar();
 }
 
-function renderRecentComms(comms) {
-  const el = document.getElementById('zone-issue-list');
-  if (!comms.length) { el.innerHTML='<div class="empty-zone">없음</div>'; return; }
-  el.innerHTML = comms.map(c=>`
-    <div class="today-task-item">
-      <div style="flex:1">
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px">
-          <span class="today-vendor-tag">${vendorName(c.vendorId)}</span>
-          <span style="font-size:11px;color:var(--text-light)">${c.date}</span>
-        </div>
-        <div style="font-size:13px;color:var(--text-dark);line-height:1.4">${c.content.length>40?c.content.slice(0,40)+'…':c.content}</div>
+function renderMonthlySales() {
+  const el    = document.getElementById('zone-issue-list');
+  const title = document.getElementById('zone-sales-title');
+  const now   = new Date();
+  const ym    = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthLabel = `${now.getMonth()+1}월 매출`;
+  title.textContent = monthLabel;
+
+  const evs = S.events.filter(e => evStart(e).startsWith(ym) && !e.archived);
+  if (!evs.length) { el.innerHTML='<div class="empty-zone">이번 달 공구 없음</div>'; return; }
+
+  let totalSales = 0, totalSettle = 0;
+  const rows = evs.map(ev => {
+    const prog = getEvProg(ev.id);
+    const s = parseFloat(prog.sales) || 0;
+    const settle = s * ((parseFloat(prog.commission) || 0) / 100);
+    totalSales  += s;
+    totalSettle += settle;
+    return { ev, s, settle };
+  });
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0 8px;border-bottom:1.5px solid var(--border);margin-bottom:8px">
+      <span style="font-size:12px;font-weight:700;color:var(--text-mid)">총 매출</span>
+      <span style="font-size:15px;font-weight:700;color:var(--brown)">${totalSales ? Math.round(totalSales).toLocaleString('ko-KR')+'원' : '—'}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid var(--cream2);margin-bottom:8px">
+      <span style="font-size:12px;font-weight:700;color:var(--text-mid)">총 정산금액</span>
+      <span style="font-size:14px;font-weight:700;color:var(--brown)">${totalSettle ? Math.round(totalSettle).toLocaleString('ko-KR')+'원' : '—'}</span>
+    </div>
+    ${rows.map(({ev, s})=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--cream2)">
+      <div>
+        <span style="font-size:11px;color:var(--text-light);margin-right:5px">${evStart(ev).slice(5).replace('-','/')}</span>
+        <span style="font-size:13px;color:var(--text-dark)">${ev.title}</span>
       </div>
-    </div>`).join('');
+      <span style="font-size:13px;font-weight:600;color:var(--text-dark);flex-shrink:0;margin-left:8px">${s ? Math.round(s).toLocaleString('ko-KR')+'원' : '—'}</span>
+    </div>`).join('')}`;
 }
 
-function renderZone(cid, tasks) {
+function renderZone(cid, tasks, showDate) {
   const el = document.getElementById(cid);
   if (!tasks.length) { el.innerHTML='<div class="empty-zone">없음</div>'; return; }
   el.innerHTML = tasks.map(t=>{
@@ -907,7 +961,10 @@ function renderZone(cid, tasks) {
       <input type="checkbox" ${t.done?'checked':''} onchange="toggleTaskDone('${t.id}',this.checked)">
       <div style="flex:1">
         <div class="today-task-text ${t.done?'done':''}">${t.content}</div>
-        ${ev?`<div style="margin-top:2px;font-size:11px;color:var(--text-light)">${ev.title}</div>`:''}
+        <div style="margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${ev?`<span style="font-size:11px;color:var(--text-light)">${ev.title}</span>`:''}
+          ${showDate && t.dueDate ? `<span style="font-size:11px;color:var(--text-light)">${fmtDate(t.dueDate)}</span>` : ''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1093,27 +1150,60 @@ let selectedGongguId = null;
 
 function renderGonggu() {
   const grid = document.getElementById('gonggu-grid');
-  const upcoming = S.events.filter(evIsActive).sort((a,b)=>evStart(a).localeCompare(evStart(b)));
-  const past     = S.events.filter(e=>!evIsActive(e)).sort((a,b)=>evStart(b).localeCompare(evStart(a)));
-  const all = [...upcoming, ...past];
-  if (!all.length) { grid.innerHTML='<div style="color:var(--text-light);font-size:13px;padding:24px">등록된 공구가 없습니다</div>'; return; }
-  grid.innerHTML = all.map(ev => {
+  const upcoming  = S.events.filter(e => evIsActive(e) && !e.archived).sort((a,b)=>evStart(a).localeCompare(evStart(b)));
+  const past      = S.events.filter(e => !evIsActive(e) && !e.archived).sort((a,b)=>evStart(b).localeCompare(evStart(a)));
+  const archvd    = S.events.filter(e => e.archived).sort((a,b)=>evStart(b).localeCompare(evStart(a)));
+  const active = [...upcoming, ...past];
+  const cardHtml = evs => evs.map(ev => {
     const prog = getEvProg(ev.id);
     const done = prog.checked.filter(Boolean).length;
-    const pct  = Math.round(done / 8 * 100);
-    const active = evIsActive(ev);
+    const pct  = Math.round(done / PROGRESS_STEPS.length * 100);
+    const isActive = evIsActive(ev);
     return `
-    <div class="vendor-card ${selectedGongguId===ev.id?'selected':''} ${!active?'paused':''}" onclick="selectGonggu('${ev.id}')">
+    <div class="vendor-card ${selectedGongguId===ev.id?'selected':''} ${!isActive?'paused':''}" onclick="selectGonggu('${ev.id}')">
       <div class="vendor-name" style="font-size:13px;margin-bottom:4px">${ev.title}</div>
       <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="today-vendor-tag">${vendorName(ev.vendorId)}</span>
         <span style="font-size:11px;color:var(--text-light)">${evFmtDate(ev)}</span>
-        <span class="badge ${active?evBadgeCls(ev):'badge-gray'}" style="font-size:10px">${active?evDdayLabel(ev):'종료'}</span>
+        <span class="badge ${isActive?evBadgeCls(ev):'badge-gray'}" style="font-size:10px">${isActive?evDdayLabel(ev):'종료'}</span>
       </div>
       <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      <div class="progress-label" style="margin-top:4px">${pct}% · ${done}/8단계</div>
+      <div class="progress-label" style="margin-top:4px">${pct}% · ${done}/${PROGRESS_STEPS.length}단계</div>
     </div>`;
   }).join('');
+
+  if (!active.length && !archvd.length) {
+    grid.innerHTML = '<div style="color:var(--text-light);font-size:13px;padding:24px">등록된 공구가 없습니다</div>';
+    return;
+  }
+  grid.innerHTML = cardHtml(active) + (archvd.length ? `
+    <div class="archive-section" style="grid-column:1/-1;margin-top:8px">
+      <button class="archive-toggle" onclick="toggleGongguArchive(this)">▶ 보관함 (${archvd.length})</button>
+      <div class="archive-list" id="gonggu-archive-list" style="display:none;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px">
+        ${cardHtml(archvd)}
+      </div>
+    </div>` : '');
+}
+function toggleGongguArchive(btn) {
+  const list = document.getElementById('gonggu-archive-list');
+  const open = list.style.display === 'grid';
+  list.style.display = open ? 'none' : 'grid';
+  btn.textContent = (open ? '▶' : '▼') + btn.textContent.slice(1);
+}
+
+function archiveEvent(evId) {
+  const ev = S.events.find(e => e.id === evId); if (!ev) return;
+  ev.archived = true;
+  selectedGongguId = null;
+  document.getElementById('gonggu-detail-panel').style.display = 'none';
+  save(); renderGonggu();
+  toast(`"${ev.title}" 보관함으로 이동됨`);
+}
+function unarchiveEvent(evId) {
+  const ev = S.events.find(e => e.id === evId); if (!ev) return;
+  ev.archived = false;
+  save(); renderGonggu();
+  toast(`"${ev.title}" 복원됨`);
 }
 
 function selectGonggu(id) {
@@ -1132,7 +1222,7 @@ function renderGongguDetail(evId) {
   const ev   = S.events.find(e => e.id === evId); if (!ev) return;
   const prog = getEvProg(evId);
   const done = prog.checked.filter(Boolean).length;
-  const pct  = Math.round(done / 8 * 100);
+  const pct  = Math.round(done / PROGRESS_STEPS.length * 100);
   const panel = document.getElementById('gonggu-detail-panel');
   const rTasks = S.tasks.filter(t=>t.eventId===evId&&!t.done&&!t.archived);
   const rComms = [...S.comms].filter(c=>c.eventId===evId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
@@ -1147,12 +1237,41 @@ function renderGongguDetail(evId) {
           <span class="badge ${evBadgeCls(ev)}">${evDdayLabel(ev)}</span>
         </div>
       </div>
-      <button onclick="selectGonggu('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${!evIsActive(ev) ? (ev.archived
+          ? `<button onclick="unarchiveEvent('${evId}')" class="btn btn-sm btn-outline">복원</button>`
+          : `<button onclick="archiveEvent('${evId}')" class="btn btn-sm btn-outline">보관함으로</button>`)
+          : ''}
+        <button onclick="selectGonggu('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
+      </div>
     </div>
-    <div class="detail-section">
+    <div class="detail-section" style="margin-bottom:12px">
+      <div class="detail-section-label" style="margin-bottom:10px">매출 현황</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group">
+          <label style="font-size:11px">총 매출 (원)</label>
+          <input type="number" id="ev-sales-${evId}" value="${prog.sales}" placeholder="0"
+            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
+            oninput="updateSettlement('${evId}')">
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">수수료 (%)</label>
+          <input type="number" id="ev-comm-${evId}" value="${prog.commission}" placeholder="0" min="0" max="100"
+            style="width:90px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
+            oninput="updateSettlement('${evId}')">
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">정산 금액</label>
+          <div id="ev-settle-${evId}" style="font-size:15px;font-weight:700;color:var(--brown);padding:8px 10px;background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius-sm);min-width:130px">
+            ${calcSettle(prog.sales, prog.commission)}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border)">
       <div class="detail-section-label">진행 단계</div>
       <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/8단계)</div>
+      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/${PROGRESS_STEPS.length}단계)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
         ${PROGRESS_STEPS.map((s,i)=>`
           <label class="step-item ${prog.checked[i]?'checked':''}">
@@ -1180,17 +1299,21 @@ function renderGongguDetail(evId) {
       <div id="ev-links-list-${evId}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
         ${prog.links.length ? prog.links.map(lk=>`
           <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
-            <a href="${lk.url}" target="_blank" style="flex:1;font-size:13px;color:var(--brown);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${lk.title}</a>
-            <span style="font-size:11px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">${lk.url}</span>
+            <div style="flex:1;min-width:0">
+              <a href="${lk.url}" target="_blank" style="font-size:13px;color:var(--brown);font-weight:500;text-decoration:none">🔗 ${lk.title}</a>
+              ${lk.desc ? `<span style="font-size:11px;color:var(--text-light);margin-left:6px">${lk.desc}</span>` : ''}
+            </div>
             <button onclick="removeEvLink('${evId}','${lk.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;flex-shrink:0;padding:0 2px">✕</button>
           </div>`).join('')
         : '<div style="font-size:13px;color:var(--text-light)">등록된 링크 없음</div>'}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input type="text" id="ev-link-title-${evId}" placeholder="링크 이름" style="width:130px">
-        <input type="text" id="ev-link-url-${evId}" placeholder="https://..." style="flex:1;min-width:180px">
+        <input type="text" id="ev-link-title-${evId}" placeholder="링크 이름" style="width:120px">
+        <input type="text" id="ev-link-desc-${evId}" placeholder="설명 (선택)" style="width:110px">
+        <input type="text" id="ev-link-url-${evId}" placeholder="https://..." style="flex:1;min-width:160px">
         <button class="btn btn-primary btn-sm" onclick="addEvLink('${evId}')">추가</button>
       </div>
+    </div>
     </div>`;
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
@@ -1211,7 +1334,7 @@ function renderGongguDetailInline(evId, el) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
   const prog = getEvProg(evId);
   const done = prog.checked.filter(Boolean).length;
-  const pct  = Math.round(done / 8 * 100);
+  const pct  = Math.round(done / PROGRESS_STEPS.length * 100);
   const rTasks = S.tasks.filter(t=>t.eventId===evId&&!t.done&&!t.archived);
   const rComms = [...S.comms].filter(c=>c.eventId===evId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
   el.innerHTML = `<div class="card" style="border:1.5px solid var(--orange)">
@@ -1226,10 +1349,33 @@ function renderGongguDetailInline(evId, el) {
       </div>
       <button onclick="toggleGongguDropdown('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
     </div>
-    <div class="detail-section">
+    <div class="detail-section" style="margin-bottom:12px">
+      <div class="detail-section-label" style="margin-bottom:10px">매출 현황</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group">
+          <label style="font-size:11px">총 매출 (원)</label>
+          <input type="number" id="ev-sales-${evId}" value="${prog.sales}" placeholder="0"
+            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
+            oninput="updateSettlement('${evId}')">
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">수수료 (%)</label>
+          <input type="number" id="ev-comm-${evId}" value="${prog.commission}" placeholder="0" min="0" max="100"
+            style="width:90px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
+            oninput="updateSettlement('${evId}')">
+        </div>
+        <div class="form-group">
+          <label style="font-size:11px">정산 금액</label>
+          <div id="ev-settle-${evId}" style="font-size:15px;font-weight:700;color:var(--brown);padding:8px 10px;background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius-sm);min-width:130px">
+            ${calcSettle(prog.sales, prog.commission)}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border)">
       <div class="detail-section-label">진행 단계</div>
       <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/8단계)</div>
+      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/${PROGRESS_STEPS.length}단계)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
         ${PROGRESS_STEPS.map((s,i)=>`
           <label class="step-item ${prog.checked[i]?'checked':''}">
@@ -1263,13 +1409,28 @@ function renderGongguDetailInline(evId, el) {
   </div>`;
 }
 
+function calcSettle(sales, commission) {
+  const s = parseFloat(sales), c = parseFloat(commission);
+  if (!s || isNaN(s)) return '—';
+  const settle = s * ((isNaN(c) ? 0 : c) / 100);
+  return Math.round(settle).toLocaleString('ko-KR') + '원';
+}
+function updateSettlement(evId) {
+  const prog = getEvProg(evId);
+  prog.sales      = document.getElementById('ev-sales-'+evId).value;
+  prog.commission = document.getElementById('ev-comm-'+evId).value;
+  document.getElementById('ev-settle-'+evId).textContent = calcSettle(prog.sales, prog.commission);
+  save();
+}
+
 function addEvLink(evId) {
   const title = document.getElementById('ev-link-title-'+evId).value.trim();
+  const desc  = document.getElementById('ev-link-desc-'+evId).value.trim();
   const url   = document.getElementById('ev-link-url-'+evId).value.trim();
   if (!title) { toast('링크 이름을 입력해 주세요'); return; }
   if (!url)   { toast('URL을 입력해 주세요'); return; }
   const prog = getEvProg(evId);
-  prog.links.push({ id: genId('lk'), title, url });
+  prog.links.push({ id: genId('lk'), title, desc, url });
   save(); renderGongguDetail(evId); toast('링크가 추가되었습니다');
 }
 
@@ -1319,7 +1480,7 @@ function renderVendorHistory() {
           <div class="detail-section-label" style="margin-bottom:8px">공구 이력 (${evs.length}건)</div>
           ${evs.length ? evs.map(ev => {
             const active = evIsActive(ev);
-            return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--cream2)">
+            return `<div onclick="showEvPopup('${ev.id}')" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--cream2);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background='var(--cream2)'" onmouseout="this.style.background=''">
               <span class="badge ${active?evBadgeCls(ev):'badge-gray'}" style="font-size:10px;flex-shrink:0">${active?evDdayLabel(ev):'종료'}</span>
               <div style="flex:1;font-size:13px;color:var(--text-dark);font-weight:500">${ev.title}</div>
               <span style="font-size:11px;color:var(--text-light)">${evFmtDate(ev)}</span>
@@ -1341,6 +1502,26 @@ function renderVendorHistory() {
       </div>
     </div>`;
   }).join('');
+}
+
+function showEvPopup(evId) {
+  const ev = S.events.find(e => e.id === evId); if (!ev) return;
+  const prog = getEvProg(evId);
+  const active = evIsActive(ev);
+  document.getElementById('ev-popup-title').textContent = ev.title;
+  document.getElementById('ev-popup-meta').innerHTML =
+    `<span class="today-vendor-tag">${vendorName(ev.vendorId)}</span>
+     <span>${evFmtDate(ev)}</span>
+     <span class="badge ${active ? evBadgeCls(ev) : 'badge-gray'}">${active ? evDdayLabel(ev) : '종료'}</span>`;
+  const settle = calcSettle(prog.sales, prog.commission);
+  document.getElementById('ev-popup-sales').innerHTML = `
+    <div style="font-size:22px;font-weight:700;color:var(--brown)">${settle}</div>`;
+  document.getElementById('ev-popup-overlay').style.display = 'block';
+  document.getElementById('ev-popup').style.display = 'block';
+}
+function closeEvPopup() {
+  document.getElementById('ev-popup-overlay').style.display = 'none';
+  document.getElementById('ev-popup').style.display = 'none';
 }
 
 function toggleVendorPaused(id) {
@@ -1411,7 +1592,7 @@ function taskItemHtml(t) {
     <div class="task-item-body">
       <div class="task-item-content ${t.done?'done-text':''}">${t.content}</div>
       <div class="task-item-meta">
-        ${t.createdAt?`<span style="font-size:11px;color:var(--text-light)">${fmtDate(t.createdAt)}</span>`:''}
+        ${t.dueDate?`<span style="font-size:11px;color:var(--text-light)">${fmtDate(t.dueDate)}</span>`:''}
         ${ev?`<span class="task-event-tag">${ev.title}</span>`:`<span class="today-vendor-tag">${vendorName(t.vendorId)}</span>`}
         ${t.assignee?`<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--brown-light);color:var(--brown);font-weight:600">👤 ${t.assignee}</span>`:''}
       </div>
@@ -1441,10 +1622,10 @@ function addTask() {
   const vendorId = document.getElementById('task-vendor').value;
   const eventId  = document.getElementById('task-event').value || null;
   const content  = document.getElementById('task-content').value.trim();
-  const dateVal  = document.getElementById('task-date').value.trim() || todayStr();
+  const dueDate  = document.getElementById('task-date').value.trim() || null;
   const assignee = document.getElementById('task-assignee').value || null;
   if (!content) { toast('할 일 내용을 입력해 주세요'); return; }
-  S.tasks.unshift({ id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:dateVal, followUpFromCommId:null, assignee });
+  S.tasks.unshift({ id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:todayStr(), dueDate, followUpFromCommId:null, assignee });
   save(); document.getElementById('task-content').value=''; document.getElementById('task-date').value=todayStr(); document.getElementById('task-assignee').value='';
   renderTaskList(); renderToday(); renderEventBars(); toast('할 일이 추가되었습니다');
 }
@@ -1590,7 +1771,7 @@ function openTaskEdit(id) {
       <div class="form-row" style="margin-bottom:0">
         <div class="form-group">
           <label style="font-size:11px">날짜</label>
-          <input type="text" id="edit-task-date-${id}" value="${t.createdAt||''}" placeholder="YYYY-MM-DD" data-di="1" style="width:120px">
+          <input type="text" id="edit-task-date-${id}" value="${t.dueDate||t.createdAt||''}" placeholder="YYYY-MM-DD" data-di="1" style="width:120px">
         </div>
         <div class="form-group" style="flex:1">
           <label style="font-size:11px">내용</label>
@@ -1625,14 +1806,14 @@ function openTaskEdit(id) {
 function saveTaskEdit(id) {
   const t = S.tasks.find(t => t.id === id); if (!t) return;
   const content = document.getElementById('edit-task-content-'+id).value.trim();
-  const date    = document.getElementById('edit-task-date-'+id).value.trim();
+  const dueDate = document.getElementById('edit-task-date-'+id).value.trim() || null;
   const eventId = document.getElementById('edit-task-event-'+id).value || null;
   if (!content) { toast('내용을 입력해 주세요'); return; }
   const assignee = document.getElementById('edit-task-assignee-'+id).value || null;
-  t.content   = content;
-  t.createdAt = date || t.createdAt;
-  t.eventId   = eventId;
-  t.assignee  = assignee;
+  t.content  = content;
+  t.dueDate  = dueDate;
+  t.eventId  = eventId;
+  t.assignee = assignee;
   save(); renderTaskList(); renderToday(); renderEventBars();
   if (selectedGongguId) renderGongguDetail(selectedGongguId);
   toast('수정되었습니다');
