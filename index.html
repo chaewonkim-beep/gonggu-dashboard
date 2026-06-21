@@ -640,6 +640,15 @@ textarea { resize: vertical; min-height: 60px; }
   <div id="cal-popup-body"></div>
 </div>
 
+<nav id="bottom-nav">
+  <div class="bottom-nav-item active" data-section="today"><span class="bnav-icon">📋</span><span class="bnav-label">데일리</span></div>
+  <div class="bottom-nav-item" data-section="schedule"><span class="bnav-icon">📅</span><span class="bnav-label">일정</span></div>
+  <div class="bottom-nav-item" data-section="gonggu"><span class="bnav-icon">📊</span><span class="bnav-label">공구현황</span></div>
+  <div class="bottom-nav-item" data-section="vendorhist"><span class="bnav-icon">🏪</span><span class="bnav-label">공구사</span></div>
+  <div class="bottom-nav-item" data-section="tasks"><span class="bnav-icon">✅</span><span class="bnav-label">할일</span></div>
+  <div class="bottom-nav-item" data-section="comms"><span class="bnav-icon">💬</span><span class="bnav-label">소통</span></div>
+</nav>
+
 <script>
 // ══════════════ Supabase 클라이언트 ══════════════
 const SB_URL = 'https://tvokoweialgamsyzwqyy.supabase.co';
@@ -1123,7 +1132,10 @@ function renderMonthlySales() {
 
 function renderZone(cid, tasks, showDate) {
   const el = document.getElementById(cid);
-  if (!tasks.length) { el.innerHTML='<div class="empty-zone">없음</div>'; return; }
+  if (!tasks.length) {
+    const msg = cid === 'zone-today-list' ? '☀️ 오늘은 여유로운 하루예요!' : '🌿 이번 주 남은 할 일이 없어요';
+    el.innerHTML = `<div class="empty-zone">${msg}</div>`; return;
+  }
   el.innerHTML = tasks.map(t=>{
     const ev = t.eventId ? eventById(t.eventId) : null;
     return `
@@ -2236,14 +2248,5 @@ async function init() {
 
 init();
 </script>
-
-<nav id="bottom-nav">
-  <div class="bottom-nav-item active" data-section="today"><span class="bnav-icon">📋</span><span class="bnav-label">데일리</span></div>
-  <div class="bottom-nav-item" data-section="schedule"><span class="bnav-icon">📅</span><span class="bnav-label">일정</span></div>
-  <div class="bottom-nav-item" data-section="gonggu"><span class="bnav-icon">📊</span><span class="bnav-label">공구현황</span></div>
-  <div class="bottom-nav-item" data-section="vendorhist"><span class="bnav-icon">🏪</span><span class="bnav-label">공구사</span></div>
-  <div class="bottom-nav-item" data-section="tasks"><span class="bnav-icon">✅</span><span class="bnav-label">할일</span></div>
-  <div class="bottom-nav-item" data-section="comms"><span class="bnav-icon">💬</span><span class="bnav-label">소통</span></div>
-</nav>
 </body>
 </html>
