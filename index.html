@@ -472,7 +472,7 @@ textarea { resize: vertical; min-height: 60px; }
       <div id="vendor-hist-list"></div>
     </section>
 
-    <!-- ④ 할 일 -->
+    <!-- ⑤ 할 일 -->
     <section id="section-tasks" class="section">
       <div class="section-title">✅ 할 일</div>
       <div class="task-add-form">
@@ -518,7 +518,7 @@ textarea { resize: vertical; min-height: 60px; }
       </div>
     </section>
 
-    <!-- ⑤ 소통 기록 -->
+    <!-- ⑥ 소통 기록 -->
     <section id="section-comms" class="section">
       <div class="section-title">💬 소통 기록</div>
       <div class="comm-add-form">
@@ -793,6 +793,8 @@ const DEFAULT_PROGRESS = {
 
 // ══════════════ 상태 ══════════════
 const S = { vendors:[], events:[], tasks:[], comms:[], progress:{}, evtProgress:{} };
+const DONE_MIGRATIONS = new Set(JSON.parse(localStorage.getItem('gg2_migrations') || '[]'));
+function markMigrated(key) { DONE_MIGRATIONS.add(key); localStorage.setItem('gg2_migrations', JSON.stringify([...DONE_MIGRATIONS])); }
 
 async function load() {
   try {
@@ -848,7 +850,7 @@ function migrateVendors() {
   }));
 }
 function migrateBaobab() {
-  // 공구사 이름 변경
+  if (DONE_MIGRATIONS.has('baobab_v1')) return;
   const v = S.vendors.find(v => v.id === 'baobab');
   if (v && v.name === '바오밥') v.name = '행복한 바오밥';
 
@@ -871,9 +873,9 @@ function migrateBaobab() {
     S.events = S.events.filter(e => e.id !== id);
   });
 
-  // 기존 evtProgress에서 evt-006, evt-007 제거
   delete S.evtProgress['evt-006'];
   delete S.evtProgress['evt-007'];
+  markMigrated('baobab_v1');
 }
 function migrateEvents() {
   // date → startDate 변환
@@ -1062,10 +1064,17 @@ function renderTodayGongguBar() {
   </div>`;
 }
 
+function weekEndStr() {
+  const d = new Date();
+  const daysToSun = d.getDay() === 0 ? 0 : 7 - d.getDay();
+  d.setDate(d.getDate() + daysToSun);
+  return d.toISOString().slice(0, 10);
+}
 function renderToday() {
-  const ts = todayStr();
+  const ts  = todayStr();
+  const wEnd = weekEndStr();
   const todayTasks = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate <= ts);
-  const weekTasks  = S.tasks.filter(t => !t.done && !t.archived && (!t.dueDate || t.dueDate > ts)).slice(0, 8);
+  const weekTasks  = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate > ts && t.dueDate <= wEnd);
   renderZone('zone-today-list', todayTasks, false);
   renderZone('zone-week-list',  weekTasks, true);
   renderMonthlySales();
@@ -1400,15 +1409,100 @@ function selectGonggu(id) {
   renderGongguDetail(id);
 }
 
-function renderGongguDetail(evId) {
-  const ev   = S.events.find(e => e.id === evId); if (!ev) return;
-  const prog = getEvProg(evId);
-  const done = prog.checked.filter(Boolean).length;
-  const pct  = Math.round(done / PROGRESS_STEPS.length * 100);
-  const panel = document.getElementById('gonggu-detail-panel');
+function buildEvDetailBodyHTML(evId, linkEditable) {
+  const prog   = getEvProg(evId);
+  const done   = prog.checked.filter(Boolean).length;
+  const pct    = Math.round(done / PROGRESS_STEPS.length * 100);
   const rTasks = S.tasks.filter(t=>t.eventId===evId&&!t.done&&!t.archived);
   const rComms = [...S.comms].filter(c=>c.eventId===evId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  const numInp = (id, val, w, extra='') =>
+    `<input type="number" id="${id}" value="${val}" placeholder="0" ${extra}
+      style="width:${w}px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none">`;
 
+  const linksHtml = linkEditable
+    ? `<div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="detail-section-label" style="margin-bottom:10px">공구 상세정보 링크</div>
+        <div id="ev-links-list-${evId}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+          ${prog.links.length ? prog.links.map(lk=>`
+            <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
+              <div style="flex:1;min-width:0">
+                <a href="${lk.url}" target="_blank" style="font-size:13px;color:var(--brown);font-weight:500;text-decoration:none">🔗 ${lk.title}</a>
+                ${lk.desc?`<span style="font-size:11px;color:var(--text-light);margin-left:6px">${lk.desc}</span>`:''}
+              </div>
+              <button onclick="removeEvLink('${evId}','${lk.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;flex-shrink:0;padding:0 2px">✕</button>
+            </div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">등록된 링크 없음</div>'}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="ev-link-title-${evId}" placeholder="링크 이름" style="width:120px">
+          <input type="text" id="ev-link-desc-${evId}" placeholder="설명 (선택)" style="width:110px">
+          <input type="text" id="ev-link-url-${evId}" placeholder="https://..." style="flex:1;min-width:160px">
+          <button class="btn btn-primary btn-sm" onclick="addEvLink('${evId}')">추가</button>
+        </div>
+      </div>`
+    : (prog.links.length ? `
+      <div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="detail-section-label" style="margin-bottom:10px">공구 상세정보 링크</div>
+        ${prog.links.map(lk=>`
+          <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px">
+            <a href="${lk.url}" target="_blank" style="flex:1;font-size:13px;color:var(--brown);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${lk.title}</a>
+          </div>`).join('')}
+      </div>` : '');
+
+  return `
+    <div class="detail-section" style="margin-bottom:12px">
+      <div class="detail-section-label" style="margin-bottom:10px">매출 현황</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
+        <div class="form-group">
+          <label style="font-size:11px">목표 매출 (원)</label>
+          ${numInp(`ev-target-${evId}`, prog.salesTarget, 140, `oninput="updateSettlement('${evId}')"`)}</div>
+        <div class="form-group">
+          <label style="font-size:11px">총 매출 (원)</label>
+          ${numInp(`ev-sales-${evId}`, prog.sales, 140, `oninput="updateSettlement('${evId}')"`)}</div>
+        <div class="form-group">
+          <label style="font-size:11px">수수료 (%)</label>
+          ${numInp(`ev-comm-${evId}`, prog.commission, 90, `min="0" max="100" oninput="updateSettlement('${evId}')"`)}</div>
+        <div class="form-group">
+          <label style="font-size:11px">정산 금액</label>
+          <div id="ev-settle-${evId}" style="font-size:15px;font-weight:700;color:var(--brown);padding:8px 10px;background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius-sm);min-width:130px">
+            ${calcSettle(prog.sales, prog.commission)}
+          </div>
+        </div>
+      </div>
+      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>
+    </div>
+    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border)">
+      <div class="detail-section-label">진행 단계</div>
+      <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/${PROGRESS_STEPS.length}단계)</div>
+      <div class="step-grid">
+        ${PROGRESS_STEPS.map((s,i)=>`
+          <label class="step-item ${prog.checked[i]?'checked':''}">
+            <input type="checkbox" ${prog.checked[i]?'checked':''} onchange="toggleEvStep('${evId}',${i},this.checked)">
+            <span>${s}</span>
+          </label>`).join('')}
+      </div>
+    </div>
+    <div class="detail-two-col">
+      <div class="detail-section">
+        <div class="detail-section-label">남은 할 일</div>
+        ${rTasks.length
+          ? rTasks.map(t=>`<div class="detail-task-item"><input type="checkbox" onchange="toggleTaskDone('${t.id}',this.checked)"><span style="font-size:13px">${t.content}</span></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-label">최근 소통</div>
+        ${rComms.length
+          ? rComms.map(c=>`<div class="detail-comm-item"><span class="badge ${typeColor(c.type)}">${c.type}</span> <span style="margin-left:4px">${fmtDate(c.date)} ${c.content.length>20?c.content.slice(0,20)+'…':c.content}</span></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+    </div>
+    ${linksHtml}`;
+}
+
+function renderGongguDetail(evId) {
+  const ev = S.events.find(e => e.id === evId); if (!ev) return;
+  const panel = document.getElementById('gonggu-detail-panel');
   panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
@@ -1427,83 +1521,7 @@ function renderGongguDetail(evId) {
         <button onclick="selectGonggu('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
       </div>
     </div>
-    <div class="detail-section" style="margin-bottom:12px">
-      <div class="detail-section-label" style="margin-bottom:10px">매출 현황</div>
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
-        <div class="form-group">
-          <label style="font-size:11px">목표 매출 (원)</label>
-          <input type="number" id="ev-target-${evId}" value="${prog.salesTarget}" placeholder="0"
-            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
-            oninput="updateSettlement('${evId}')">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11px">총 매출 (원)</label>
-          <input type="number" id="ev-sales-${evId}" value="${prog.sales}" placeholder="0"
-            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
-            oninput="updateSettlement('${evId}')">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11px">수수료 (%)</label>
-          <input type="number" id="ev-comm-${evId}" value="${prog.commission}" placeholder="0" min="0" max="100"
-            style="width:90px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
-            oninput="updateSettlement('${evId}')">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11px">정산 금액</label>
-          <div id="ev-settle-${evId}" style="font-size:15px;font-weight:700;color:var(--brown);padding:8px 10px;background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius-sm);min-width:130px">
-            ${calcSettle(prog.sales, prog.commission)}
-          </div>
-        </div>
-      </div>
-      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>
-    </div>
-    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border)">
-      <div class="detail-section-label">진행 단계</div>
-      <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/${PROGRESS_STEPS.length}단계)</div>
-      <div class="step-grid">
-        ${PROGRESS_STEPS.map((s,i)=>`
-          <label class="step-item ${prog.checked[i]?'checked':''}">
-            <input type="checkbox" ${prog.checked[i]?'checked':''} onchange="toggleEvStep('${evId}',${i},this.checked)">
-            <span>${s}</span>
-          </label>`).join('')}
-      </div>
-    </div>
-    <div class="detail-two-col">
-      <div class="detail-section">
-        <div class="detail-section-label">남은 할 일</div>
-        ${rTasks.length
-          ? rTasks.map(t=>`<div class="detail-task-item"><input type="checkbox" onchange="toggleTaskDone('${t.id}',this.checked)"><span style="font-size:13px">${t.content}</span></div>`).join('')
-          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
-      </div>
-      <div class="detail-section">
-        <div class="detail-section-label">최근 소통</div>
-        ${rComms.length
-          ? rComms.map(c=>`<div class="detail-comm-item"><span class="badge ${typeColor(c.type)}">${c.type}</span> <span style="margin-left:4px">${fmtDate(c.date)} ${c.content.length>20?c.content.slice(0,20)+'…':c.content}</span></div>`).join('')
-          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
-      </div>
-    </div>
-    <div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-      <div class="detail-section-label" style="margin-bottom:10px">공구 상세정보 링크</div>
-      <div id="ev-links-list-${evId}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-        ${prog.links.length ? prog.links.map(lk=>`
-          <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
-            <div style="flex:1;min-width:0">
-              <a href="${lk.url}" target="_blank" style="font-size:13px;color:var(--brown);font-weight:500;text-decoration:none">🔗 ${lk.title}</a>
-              ${lk.desc ? `<span style="font-size:11px;color:var(--text-light);margin-left:6px">${lk.desc}</span>` : ''}
-            </div>
-            <button onclick="removeEvLink('${evId}','${lk.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;flex-shrink:0;padding:0 2px">✕</button>
-          </div>`).join('')
-        : '<div style="font-size:13px;color:var(--text-light)">등록된 링크 없음</div>'}
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input type="text" id="ev-link-title-${evId}" placeholder="링크 이름" style="width:120px">
-        <input type="text" id="ev-link-desc-${evId}" placeholder="설명 (선택)" style="width:110px">
-        <input type="text" id="ev-link-url-${evId}" placeholder="https://..." style="flex:1;min-width:160px">
-        <button class="btn btn-primary btn-sm" onclick="addEvLink('${evId}')">추가</button>
-      </div>
-    </div>
-    </div>`;
+    ${buildEvDetailBodyHTML(evId, true)}`;
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
@@ -1521,11 +1539,6 @@ function toggleGongguDropdown(evId) {
 }
 function renderGongguDetailInline(evId, el) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
-  const prog = getEvProg(evId);
-  const done = prog.checked.filter(Boolean).length;
-  const pct  = Math.round(done / PROGRESS_STEPS.length * 100);
-  const rTasks = S.tasks.filter(t=>t.eventId===evId&&!t.done&&!t.archived);
-  const rComms = [...S.comms].filter(c=>c.eventId===evId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
   el.innerHTML = `<div class="card" style="border:1.5px solid var(--orange)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
@@ -1538,70 +1551,7 @@ function renderGongguDetailInline(evId, el) {
       </div>
       <button onclick="toggleGongguDropdown('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
     </div>
-    <div class="detail-section" style="margin-bottom:12px">
-      <div class="detail-section-label" style="margin-bottom:10px">매출 현황</div>
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
-        <div class="form-group">
-          <label style="font-size:11px">목표 매출 (원)</label>
-          <input type="number" id="ev-target-${evId}" value="${prog.salesTarget}" placeholder="0"
-            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
-            oninput="updateSettlement('${evId}')">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11px">총 매출 (원)</label>
-          <input type="number" id="ev-sales-${evId}" value="${prog.sales}" placeholder="0"
-            style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
-            oninput="updateSettlement('${evId}')">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11px">수수료 (%)</label>
-          <input type="number" id="ev-comm-${evId}" value="${prog.commission}" placeholder="0" min="0" max="100"
-            style="width:90px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none"
-            oninput="updateSettlement('${evId}')">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11px">정산 금액</label>
-          <div id="ev-settle-${evId}" style="font-size:15px;font-weight:700;color:var(--brown);padding:8px 10px;background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius-sm);min-width:130px">
-            ${calcSettle(prog.sales, prog.commission)}
-          </div>
-        </div>
-      </div>
-      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>
-    </div>
-    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border)">
-      <div class="detail-section-label">진행 단계</div>
-      <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/${PROGRESS_STEPS.length}단계)</div>
-      <div class="step-grid">
-        ${PROGRESS_STEPS.map((s,i)=>`
-          <label class="step-item ${prog.checked[i]?'checked':''}">
-            <input type="checkbox" ${prog.checked[i]?'checked':''} onchange="toggleEvStep('${evId}',${i},this.checked)">
-            <span>${s}</span>
-          </label>`).join('')}
-      </div>
-    </div>
-    <div class="detail-two-col">
-      <div class="detail-section">
-        <div class="detail-section-label">남은 할 일</div>
-        ${rTasks.length
-          ? rTasks.map(t=>`<div class="detail-task-item"><input type="checkbox" onchange="toggleTaskDone('${t.id}',this.checked)"><span style="font-size:13px">${t.content}</span></div>`).join('')
-          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
-      </div>
-      <div class="detail-section">
-        <div class="detail-section-label">최근 소통</div>
-        ${rComms.length
-          ? rComms.map(c=>`<div class="detail-comm-item"><span class="badge ${typeColor(c.type)}">${c.type}</span> <span style="margin-left:4px">${fmtDate(c.date)} ${c.content.length>20?c.content.slice(0,20)+'…':c.content}</span></div>`).join('')
-          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
-      </div>
-    </div>
-    ${prog.links.length ? `
-    <div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-      <div class="detail-section-label" style="margin-bottom:10px">공구 상세정보 링크</div>
-      ${prog.links.map(lk=>`
-        <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px">
-          <a href="${lk.url}" target="_blank" style="flex:1;font-size:13px;color:var(--brown);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${lk.title}</a>
-        </div>`).join('')}
-    </div>` : ''}
+    ${buildEvDetailBodyHTML(evId, false)}
   </div>`;
 }
 
