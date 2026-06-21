@@ -150,7 +150,7 @@ textarea { resize: vertical; min-height: 60px; }
 .today-sales-wrap { margin-top: 16px; }
 .today-zone { background: #fff; border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
 .today-zone-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1.5px solid var(--border-light); display: flex; align-items: center; gap: 6px; }
-.zone-today .today-zone-title { color: var(--red); }
+.zone-today .today-zone-title { color: #2E7D32; }
 .zone-week  .today-zone-title { color: var(--orange); }
 .zone-issue .today-zone-title { color: var(--brown); }
 .today-task-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
@@ -395,7 +395,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div id="app-body">
   <nav id="sidebar">
-    <div class="nav-item active" data-section="today"><span class="nav-icon">📋</span><span>데일리 체크</span></div>
+    <div class="nav-item active" data-section="today"><span class="nav-icon">🚀</span><span>오늘의 브리핑</span></div>
     <div class="nav-item" data-section="schedule"><span class="nav-icon">📅</span><span>공구 일정</span></div>
     <div class="nav-item" data-section="gonggu"><span class="nav-icon">📊</span><span>공구 현황</span></div>
     <div class="nav-item" data-section="vendorhist"><span class="nav-icon">🏪</span><span>공구사 현황</span></div>
@@ -408,13 +408,12 @@ textarea { resize: vertical; min-height: 60px; }
 
     <!-- ① 오늘 확인 -->
     <section id="section-today" class="section active">
-      <div class="section-title">📋 데일리 체크</div>
+      <div id="today-date-header"></div>
       <div id="today-gonggu-bar"></div>
-      <div id="today-gonggu-dropdown" style="display:none;margin-bottom:16px"></div>
-      <div style="display:flex;align-items:center;gap:12px;margin:8px 0 20px">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:11px;font-weight:700;color:var(--text-light);letter-spacing:0.6px;white-space:nowrap">할 일</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
+      <div id="today-gonggu-dropdown" style="display:none;margin-bottom:20px"></div>
+      <div style="margin:24px 0 8px">
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="font-size:14px;color:var(--text-mid);margin-top:14px;margin-bottom:18px;text-align:center;font-weight:500">할 일을 하나씩 해치워봐요! 😤</div>
       </div>
       <div class="today-grid">
         <div class="today-zone zone-today">
@@ -422,14 +421,13 @@ textarea { resize: vertical; min-height: 60px; }
           <div id="zone-today-list"></div>
         </div>
         <div class="today-zone zone-week">
-          <div class="today-zone-title">이번 주 할 일</div>
+          <div class="today-zone-title">남은 할 일</div>
           <div id="zone-week-list"></div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin:20px 0 16px">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span id="zone-sales-title" style="font-size:11px;font-weight:700;color:var(--text-light);letter-spacing:0.6px;white-space:nowrap">이번 달 매출</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
+      <div style="margin:32px 0 8px">
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="font-size:14px;color:var(--text-mid);margin-top:14px;margin-bottom:18px;text-align:center;font-weight:500"><span id="zone-sales-title">이번 달</span> 성과가 쌓이고 있어요! 😊</div>
       </div>
       <div class="today-zone zone-issue today-sales-wrap">
         <div id="zone-issue-list"></div>
@@ -674,7 +672,7 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <nav id="bottom-nav">
-  <div class="bottom-nav-item active" data-section="today"><span class="bnav-icon">📋</span><span class="bnav-label">데일리</span></div>
+  <div class="bottom-nav-item active" data-section="today"><span class="bnav-icon">🚀</span><span class="bnav-label">브리핑</span></div>
   <div class="bottom-nav-item" data-section="schedule"><span class="bnav-icon">📅</span><span class="bnav-label">일정</span></div>
   <div class="bottom-nav-item" data-section="gonggu"><span class="bnav-icon">📊</span><span class="bnav-label">공구현황</span></div>
   <div class="bottom-nav-item" data-section="vendorhist"><span class="bnav-icon">🏪</span><span class="bnav-label">공구사</span></div>
@@ -1104,6 +1102,47 @@ document.querySelectorAll('.bottom-nav-item').forEach(item => {
 });
 
 // ══════════════ ① 오늘 확인 ══════════════
+const DAY_KO  = ['일','월','화','수','목','금','토'];
+const WEATHER = ['☀️','🌤️','⛅','🌥️','☁️'];
+
+const CHEER_MSGS = [
+  '💪 오늘도 할 수 있어요! 하나씩 해치워봐요',
+  '🔥 집중하면 금방 끝나요! 파이팅!',
+  '✨ 오늘 할 일이 기다리고 있어요, 시작해볼까요?',
+  '🎯 목표를 향해! 오늘도 잘 해낼 거예요',
+  '🌟 한 걸음씩, 오늘도 멋지게 해봐요!',
+  '💡 작은 것부터 하나씩, 분명히 해낼 수 있어요',
+  '🚀 오늘 할 일을 완료하면 뿌듯할 거예요!',
+  '🌈 오늘 하루도 멋지게 마무리해요!',
+];
+
+function renderTodayDateHeader() {
+  const el = document.getElementById('today-date-header'); if (!el) return;
+  const d   = new Date();
+  const m   = d.getMonth() + 1;
+  const day = d.getDate();
+  const dow = DAY_KO[d.getDay()];
+  const w   = WEATHER[d.getDay() % WEATHER.length];
+  const ts  = todayStr();
+  const todayCount = S.tasks.filter(t=>!t.done&&!t.archived&&t.dueDate&&t.dueDate<=ts).length;
+  const doneMsgs = [
+    '최고예요! 오늘도 완벽하게 해냈어요 🎉',
+    '대단해요! 할 일을 모두 해치웠군요 💪',
+    '역시! 오늘도 믿음직한 하루예요 ✨',
+    '완벽해요! 오늘 하루도 수고했어요 🌟',
+  ];
+  const summary = todayCount
+    ? CHEER_MSGS[Math.floor(Math.random() * CHEER_MSGS.length)]
+    : doneMsgs[Math.floor(Math.random() * doneMsgs.length)];
+  el.innerHTML = `
+  <div style="background:#fff;border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow);position:relative;overflow:hidden">
+    <div style="position:absolute;right:-4px;top:-4px;font-size:64px;opacity:0.08;line-height:1">${w}</div>
+    <div style="font-size:11px;font-weight:600;color:var(--text-light);margin-bottom:4px;letter-spacing:0.5px">오늘의 브리핑 🚀</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text-dark);letter-spacing:-0.5px">${m}월 ${day}일 <span style="font-size:18px;font-weight:600;color:var(--text-mid)">${dow}요일</span></div>
+    <div style="font-size:12px;color:${todayCount ? 'var(--brown)' : '#3A9A5C'};font-weight:500;margin-top:8px">${summary}</div>
+  </div>`;
+}
+
 let todayBarIdx = 0;
 
 function todayBarSlides() {
@@ -1117,35 +1156,44 @@ function todayBarSlides() {
   return [...ongoing.map(e=>({e,type:'ongoing'})), ...next.map(e=>({e,type:'next'}))];
 }
 
+function cardHtml({e, type}) {
+  const bg = type==='ongoing' ? '#EEF7EE' : '#FFF4EC';
+  const hoverBg = type==='ongoing' ? '#E3F2E3' : '#FFE9D6';
+  return `<div onclick="toggleGongguDropdown('${e.id}')" style="display:flex;flex-direction:column;gap:5px;background:${bg};border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow-sm);cursor:pointer;transition:background 0.15s;box-sizing:border-box" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${bg}'">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;font-weight:700;color:${type==='ongoing'?'#2E7D32':'#A04010'}">${type==='ongoing'?'진행 중':`다음 공구 <span style="font-weight:400;color:var(--text-light);margin-left:2px">${evDdayLabel(e)}</span>`}</span>
+      <span style="font-size:11px;color:var(--text-light)">▾</span>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:var(--text-dark);line-height:1.3">${e.title}</div>
+  </div>`;
+}
+
 function renderTodayGongguBar() {
   const el = document.getElementById('today-gonggu-bar');
   const all = todayBarSlides();
   if (!all.length) { el.innerHTML = ''; return; }
 
-  const n = all.length;
-  todayBarIdx = Math.min(todayBarIdx, n - 1);
+  // 3개씩 페이지로 묶기
+  const pages = [];
+  for (let i = 0; i < all.length; i += 3) pages.push(all.slice(i, i + 3));
+  const np = pages.length;
+  todayBarIdx = Math.min(todayBarIdx, np - 1);
 
   el.innerHTML = `
     <div style="margin-bottom:12px">
       <div style="overflow:hidden">
         <div id="tgb-track" style="display:flex;transition:transform 0.3s ease;transform:translateX(-${todayBarIdx * 100}%)">
-          ${all.map(({e, type}) => `
-          <div style="min-width:100%;box-sizing:border-box">
-            <div onclick="toggleGongguDropdown('${e.id}')" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-left:3px solid ${type==='ongoing'?'var(--green)':'var(--orange)'};border-radius:var(--radius-sm);padding:10px 14px;box-shadow:var(--shadow);cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--cream2)'" onmouseout="this.style.background='#fff'">
-              <span style="font-size:11px;font-weight:700;color:${type==='ongoing'?'#2E7D32':'#A04010'};flex-shrink:0">${type==='ongoing'?'진행 중':'다음'}</span>
-              <span style="font-size:14px;font-weight:600;color:var(--text-dark);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.title}</span>
-              <span style="font-size:12px;color:var(--text-light);flex-shrink:0">${evFmtDate(e)}</span>
-              <span class="badge ${evBadgeCls(e)}" style="flex-shrink:0">${evDdayLabel(e)}</span>
-              <span style="font-size:11px;color:var(--text-light);flex-shrink:0">▾</span>
-            </div>
+          ${pages.map(page => `
+          <div style="min-width:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(${page.length},1fr);gap:10px">
+            ${page.map(item => cardHtml(item)).join('')}
           </div>`).join('')}
         </div>
       </div>
-      ${n > 1 ? `
+      ${np > 1 ? `
       <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:7px">
         <button onclick="todayBarNav(-1)" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:18px;line-height:1;padding:0 4px">‹</button>
         <div style="display:flex;gap:5px">
-          ${all.map((_,i)=>`<div class="tgb-dot" style="width:6px;height:6px;border-radius:50%;background:${i===todayBarIdx?'var(--brown)':'var(--border)'};transition:background 0.2s"></div>`).join('')}
+          ${pages.map((_,i)=>`<div class="tgb-dot" style="width:6px;height:6px;border-radius:50%;background:${i===todayBarIdx?'var(--brown)':'var(--border)'};transition:background 0.2s"></div>`).join('')}
         </div>
         <button onclick="todayBarNav(1)" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:18px;line-height:1;padding:0 4px">›</button>
       </div>` : ''}
@@ -1153,9 +1201,10 @@ function renderTodayGongguBar() {
 }
 
 function todayBarNav(dir) {
-  const n = todayBarSlides().length;
-  if (!n) return;
-  todayBarIdx = (todayBarIdx + dir + n) % n;
+  const all = todayBarSlides();
+  const np = Math.ceil(all.length / 3);
+  if (!np) return;
+  todayBarIdx = (todayBarIdx + dir + np) % np;
   const track = document.getElementById('tgb-track');
   if (track) track.style.transform = `translateX(-${todayBarIdx * 100}%)`;
   document.querySelectorAll('.tgb-dot').forEach((d,i) =>
@@ -1170,9 +1219,9 @@ function weekEndStr() {
 }
 function renderToday() {
   const ts  = todayStr();
-  const wEnd = weekEndStr();
   const todayTasks = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate <= ts);
-  const weekTasks  = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate > ts && t.dueDate <= wEnd);
+  const weekTasks  = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate > ts).sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+  renderTodayDateHeader();
   renderZone('zone-today-list', todayTasks, false);
   renderZone('zone-week-list',  weekTasks, true);
   renderMonthlySales();
@@ -1200,29 +1249,40 @@ function renderMonthlySales() {
     return { ev, s, settle };
   });
 
+  const maxSales = Math.max(...rows.map(r => r.s), 1);
+
   el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0 8px;border-bottom:1.5px solid var(--border);margin-bottom:8px">
-      <span style="font-size:12px;font-weight:700;color:var(--text-mid)">총 매출</span>
-      <span style="font-size:15px;font-weight:700;color:var(--brown)">${totalSales ? Math.round(totalSales).toLocaleString('ko-KR')+'원' : '—'}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid var(--cream2);margin-bottom:8px">
-      <span style="font-size:12px;font-weight:700;color:var(--text-mid)">총 정산금액</span>
-      <span style="font-size:14px;font-weight:700;color:var(--brown)">${totalSettle ? Math.round(totalSettle).toLocaleString('ko-KR')+'원' : '—'}</span>
-    </div>
-    ${rows.map(({ev, s})=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--cream2)">
-      <div>
-        <span style="font-size:11px;color:var(--text-light);margin-right:5px">${evStart(ev).slice(5).replace('-','/')}</span>
-        <span style="font-size:13px;color:var(--text-dark)">${ev.title}</span>
+    <div style="display:flex;gap:16px;margin-bottom:14px">
+      <div style="flex:1;background:var(--cream2);border-radius:var(--radius-sm);padding:12px 14px">
+        <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">총 매출</div>
+        <div style="font-size:18px;font-weight:800;color:var(--brown)">${totalSales ? Math.round(totalSales).toLocaleString('ko-KR')+'원' : '—'}</div>
       </div>
-      <span style="font-size:13px;font-weight:600;color:var(--text-dark);flex-shrink:0;margin-left:8px">${s ? Math.round(s).toLocaleString('ko-KR')+'원' : '—'}</span>
-    </div>`).join('')}`;
+      <div style="flex:1;background:var(--cream2);border-radius:var(--radius-sm);padding:12px 14px">
+        <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">총 정산금액</div>
+        <div style="font-size:18px;font-weight:800;color:#3A9A5C">${totalSettle ? Math.round(totalSettle).toLocaleString('ko-KR')+'원' : '—'}</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${rows.map(({ev, s}) => {
+        const pct = maxSales > 0 ? Math.max(4, Math.round(s / maxSales * 100)) : 4;
+        return `
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+            <span style="font-size:12px;color:var(--text-dark);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">${ev.title}</span>
+            <span style="font-size:12px;font-weight:700;color:var(--brown);flex-shrink:0;margin-left:8px">${s ? Math.round(s).toLocaleString('ko-KR')+'원' : '미입력'}</span>
+          </div>
+          <div style="height:8px;background:var(--cream2);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${s ? pct : 0}%;background:linear-gradient(90deg,var(--brown),#C8956A);border-radius:4px;transition:width 0.4s ease"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function renderZone(cid, tasks, showDate) {
   const el = document.getElementById(cid);
   if (!tasks.length) {
-    const msg = cid === 'zone-today-list' ? '☀️ 오늘은 여유로운 하루예요!' : '🌿 이번 주 남은 할 일이 없어요';
+    const msg = cid === 'zone-today-list' ? '🎉 오늘 할 일을 모두 완료했어요!' : '🌿 남은 할 일이 없어요!';
     el.innerHTML = `<div class="empty-zone">${msg}</div>`; return;
   }
   el.innerHTML = tasks.map(t=>{
