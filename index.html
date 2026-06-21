@@ -701,8 +701,12 @@ function openDatePicker(input) {
   const rect = input.getBoundingClientRect();
   const picker = document.getElementById('dp-picker');
   picker.style.display = 'block';
-  const top = rect.bottom + 4;
-  const left = Math.min(rect.left, window.innerWidth - 270);
+  const ph = picker.offsetHeight;
+  const pw = picker.offsetWidth || 252;
+  const top  = (rect.bottom + 4 + ph > window.innerHeight)
+    ? Math.max(4, rect.top - ph - 4)
+    : rect.bottom + 4;
+  const left = Math.min(Math.max(4, rect.left), window.innerWidth - pw - 4);
   picker.style.top  = top + 'px';
   picker.style.left = left + 'px';
   document.getElementById('dp-overlay').style.display = 'block';
@@ -1512,6 +1516,14 @@ function deadlineInfo(ev) {
 
 // ══════════════ ③ 공구 현황 (공구별 단계 관리) ══════════════
 let selectedGongguId = null;
+const GD_PAGES = ['💰 매출 현황','📋 공구 정보','🎁 이벤트','🔗 링크','✅ 진행 단계'];
+let _gongguDetailPageIdx = 0;
+
+function gongguDetailPage(evId, idx) {
+  _gongguDetailPageIdx = Math.max(0, Math.min(GD_PAGES.length - 1, idx));
+  if (selectedGongguId === evId) renderGongguDetail(evId);
+  if (_openGongguDropdown === evId) renderGongguDetailInline(evId, document.getElementById('today-gonggu-dropdown'));
+}
 
 function renderGonggu() {
   const grid = document.getElementById('gonggu-grid');
@@ -1593,51 +1605,30 @@ function selectGonggu(id) {
     renderGonggu(); return;
   }
   selectedGongguId = id;
+  _gongguDetailPageIdx = 0;
   renderGonggu();
   renderGongguDetail(id);
 }
 
 function buildEvDetailBodyHTML(evId, linkEditable) {
-  const prog   = getEvProg(evId);
-  const done   = prog.checked.filter(Boolean).length;
-  const pct    = Math.round(done / PROGRESS_STEPS.length * 100);
+  const prog = getEvProg(evId);
+  const done = prog.checked.filter(Boolean).length;
+  const pct  = Math.round(done / PROGRESS_STEPS.length * 100);
+  const idx  = _gongguDetailPageIdx;
   const numInp = (id, val, w, extra='') =>
     `<input type="number" id="${id}" value="${val}" placeholder="0" ${extra}
       style="width:${w}px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none">`;
 
-  const linksHtml = linkEditable
-    ? `<div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <div class="section-chip">🔗 공구 상세정보 링크</div>
-        <div id="ev-links-list-${evId}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-          ${prog.links.length ? prog.links.map(lk=>`
-            <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
-              <div style="flex:1;min-width:0">
-                <a href="${lk.url}" target="_blank" style="font-size:13px;color:var(--brown);font-weight:500;text-decoration:none">🔗 ${lk.title}</a>
-                ${lk.desc?`<span style="font-size:11px;color:var(--text-light);margin-left:6px">${lk.desc}</span>`:''}
-              </div>
-              <button onclick="removeEvLink('${evId}','${lk.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;flex-shrink:0;padding:0 2px">✕</button>
-            </div>`).join('')
-          : '<div style="font-size:13px;color:var(--text-light)">등록된 링크 없음</div>'}
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="ev-link-title-${evId}" placeholder="링크 이름" style="width:120px">
-          <input type="text" id="ev-link-desc-${evId}" placeholder="설명 (선택)" style="width:110px">
-          <input type="text" id="ev-link-url-${evId}" placeholder="https://..." style="flex:1;min-width:160px">
-          <button class="btn btn-primary btn-sm" onclick="addEvLink('${evId}')">추가</button>
-        </div>
-      </div>`
-    : (prog.links.length ? `
-      <div class="detail-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <div class="section-chip">🔗 공구 상세정보 링크</div>
-        ${prog.links.map(lk=>`
-          <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px">
-            <a href="${lk.url}" target="_blank" style="flex:1;font-size:13px;color:var(--brown);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${lk.title}</a>
-          </div>`).join('')}
-      </div>` : '');
+  const navHtml = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      ${['매출현황','공구정보','이벤트','링크','진행단계'].map((label,i)=>`
+        <button onclick="gongguDetailPage('${evId}',${i})" style="font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1.5px solid ${i===idx?'var(--brown)':'var(--border)'};background:${i===idx?'var(--brown)':'transparent'};color:${i===idx?'#fff':'var(--text-mid)'};font-family:inherit;transition:all .15s">${label}</button>`).join('')}
+    </div>`;
 
-  return `
-    <div class="detail-section" style="margin-bottom:16px">
-      <div class="section-chip">💰 매출 현황</div>
+  let pageHtml = '';
+
+  if (idx === 0) {
+    pageHtml = `
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
         <div class="form-group">
           <label style="font-size:11px">목표 매출 (원)</label>
@@ -1658,10 +1649,10 @@ function buildEvDetailBodyHTML(evId, linkEditable) {
           </div>
         </div>
       </div>
-      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>
-    </div>
-    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border);margin-bottom:16px">
-      <div class="section-chip">📋 공구 정보</div>
+      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>`;
+
+  } else if (idx === 1) {
+    pageHtml = `
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <div class="form-group" style="flex:1;min-width:120px">
           <label style="font-size:11px">관련 일정</label>
@@ -1677,12 +1668,12 @@ function buildEvDetailBodyHTML(evId, linkEditable) {
       <div class="form-group" style="width:100%">
         <label style="font-size:11px">메모</label>
         <textarea id="ev-memo-${evId}" placeholder="공구 관련 메모..."
-          style="width:100%;min-height:52px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);resize:vertical"
+          style="width:100%;min-height:80px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);resize:vertical"
           onblur="saveEvField('${evId}','memo',this.value)">${prog.memo}</textarea>
-      </div>
-    </div>
-    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border);margin-bottom:16px">
-      <div class="section-chip">🎁 이벤트</div>
+      </div>`;
+
+  } else if (idx === 2) {
+    pageHtml = `
       <div id="ev-events-list-${evId}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
         ${prog.evEvents.length ? prog.evEvents.map(ee => evEventItemHtml(evId, ee)).join('')
         : '<div style="font-size:13px;color:var(--text-light)">등록된 이벤트 없음</div>'}
@@ -1707,11 +1698,39 @@ function buildEvDetailBodyHTML(evId, linkEditable) {
           <input type="text" id="ev-ev-url-${evId}" placeholder="참여링크 (선택)" style="flex:1;min-width:160px">
           <button class="btn btn-outline btn-sm" onclick="addEvEvent('${evId}')">추가</button>
         </div>
-      </div>
-    </div>
-    ${linksHtml}
-    <div class="detail-section" style="padding-top:16px;border-top:1px solid var(--border);margin-top:4px">
-      <div class="section-chip">✅ 진행 단계</div>
+      </div>`;
+
+  } else if (idx === 3) {
+    if (linkEditable) {
+      pageHtml = `
+        <div id="ev-links-list-${evId}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+          ${prog.links.length ? prog.links.map(lk=>`
+            <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
+              <div style="flex:1;min-width:0">
+                <a href="${lk.url}" target="_blank" style="font-size:13px;color:var(--brown);font-weight:500;text-decoration:none">🔗 ${lk.title}</a>
+                ${lk.desc?`<span style="font-size:11px;color:var(--text-light);margin-left:6px">${lk.desc}</span>`:''}
+              </div>
+              <button onclick="removeEvLink('${evId}','${lk.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;flex-shrink:0;padding:0 2px">✕</button>
+            </div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-light)">등록된 링크 없음</div>'}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="ev-link-title-${evId}" placeholder="링크 이름" style="width:120px">
+          <input type="text" id="ev-link-desc-${evId}" placeholder="설명 (선택)" style="width:110px">
+          <input type="text" id="ev-link-url-${evId}" placeholder="https://..." style="flex:1;min-width:160px">
+          <button class="btn btn-primary btn-sm" onclick="addEvLink('${evId}')">추가</button>
+        </div>`;
+    } else {
+      pageHtml = prog.links.length
+        ? prog.links.map(lk=>`
+          <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px">
+            <a href="${lk.url}" target="_blank" style="flex:1;font-size:13px;color:var(--brown);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${lk.title}</a>
+          </div>`).join('')
+        : '<div style="font-size:13px;color:var(--text-light)">등록된 링크 없음</div>';
+    }
+
+  } else if (idx === 4) {
+    pageHtml = `
       <div class="progress-bar-wrap" style="height:10px;margin-bottom:6px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
       <div class="progress-label" style="margin-bottom:12px">${pct}% 완료 (${done}/${PROGRESS_STEPS.length}단계)</div>
       <div class="step-grid">
@@ -1720,8 +1739,10 @@ function buildEvDetailBodyHTML(evId, linkEditable) {
             <input type="checkbox" ${prog.checked[i]?'checked':''} onchange="toggleEvStep('${evId}',${i},this.checked)">
             <span>${s}</span>
           </label>`).join('')}
-      </div>
-    </div>`;
+      </div>`;
+  }
+
+  return navHtml + `<div>${pageHtml}</div>`;
 }
 
 function renderGongguDetail(evId) {
