@@ -311,6 +311,36 @@ textarea { resize: vertical; min-height: 60px; }
 .detail-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
 .vendor-hist-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
+/* ─── 하단 탭바 (모바일) ─── */
+#bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: var(--brown-light);
+  border-top: 1.5px solid var(--border);
+  box-shadow: 0 -2px 12px rgba(123,92,62,0.12);
+  height: 60px;
+}
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px 2px;
+  border-top: 3px solid transparent;
+  transition: all 0.15s;
+  min-width: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav-item.active { color: var(--brown); border-top-color: var(--yellow); background: var(--yellow-light); }
+.bottom-nav-item .bnav-icon { font-size: 18px; line-height: 1.2; }
+.bottom-nav-item .bnav-label { font-size: 9px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
 @media (max-width: 900px) {
   .today-grid { grid-template-columns: 1fr; }
   .schedule-layout { grid-template-columns: 1fr; }
@@ -342,36 +372,6 @@ textarea { resize: vertical; min-height: 60px; }
   .form-row select { width: 100% !important; }
   #bottom-nav { display: flex; }
 }
-
-/* ─── 하단 탭바 (모바일) ─── */
-#bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 200;
-  background: var(--brown-light);
-  border-top: 1.5px solid var(--border);
-  box-shadow: 0 -2px 12px rgba(123,92,62,0.12);
-  height: 60px;
-}
-.bottom-nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  color: var(--text-light);
-  cursor: pointer;
-  padding: 4px 2px;
-  border-top: 3px solid transparent;
-  transition: all 0.15s;
-  min-width: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-.bottom-nav-item.active { color: var(--brown); border-top-color: var(--yellow); background: var(--yellow-light); }
-.bottom-nav-item .bnav-icon { font-size: 18px; line-height: 1.2; }
-.bottom-nav-item .bnav-label { font-size: 9px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 </style>
 </head>
 <body>
