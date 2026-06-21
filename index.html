@@ -401,7 +401,7 @@ textarea { resize: vertical; min-height: 60px; }
     <div class="nav-item" data-section="vendorhist"><span class="nav-icon">🏪</span><span>공구사 현황</span></div>
     <div class="nav-item" data-section="tasks"><span class="nav-icon">✅</span><span>할 일</span></div>
     <div class="nav-item" data-section="comms"><span class="nav-icon">💬</span><span>소통 기록</span></div>
-    <div class="nav-item" data-section="insta"><span class="nav-icon">📸</span><span>인스타그램</span></div>
+    <div class="nav-item" data-section="insta"><span class="nav-icon">📸</span><span>콘텐츠 기록</span></div>
   </nav>
 
   <main id="content">
@@ -488,7 +488,18 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ④ 공구사 현황 (누적 이력) -->
     <section id="section-vendorhist" class="section">
       <div class="section-title">🏪 공구사 현황</div>
-      <div id="vendor-hist-list"></div>
+      <div class="card" style="margin-bottom:20px">
+        <h3 style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:12px">공구사 추가</h3>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="form-group" style="flex:1">
+            <label>공구사명</label>
+            <input type="text" id="new-vendor-name" placeholder="공구사 이름">
+          </div>
+          <button class="btn btn-primary" id="btn-add-vendor">추가</button>
+        </div>
+      </div>
+      <div class="vendor-grid" id="vendor-hist-grid"></div>
+      <div id="vendor-hist-detail" style="display:none;margin-top:4px"></div>
     </section>
 
     <!-- ⑤ 할 일 -->
@@ -509,7 +520,7 @@ textarea { resize: vertical; min-height: 60px; }
             <label>담당자</label>
             <select id="task-assignee">
               <option value="">없음</option>
-              <option value="김채원">김채원</option>
+              <option value="채원">채원</option>
               <option value="대표님">대표님</option>
             </select>
           </div>
@@ -539,7 +550,7 @@ textarea { resize: vertical; min-height: 60px; }
 
     <!-- ⑦ 인스타그램 컨텐츠 -->
     <section id="section-insta" class="section">
-      <div class="section-title">📸 인스타그램 컨텐츠</div>
+      <div class="section-title">📸 콘텐츠 기록</div>
       <div class="vendor-grid" id="insta-event-grid"></div>
       <div id="insta-event-detail" style="display:none;margin-top:4px"></div>
     </section>
@@ -613,10 +624,8 @@ textarea { resize: vertical; min-height: 60px; }
         </div>
         <button class="btn btn-primary" id="btn-add-comm" style="margin-top:4px">저장</button>
       </div>
-      <div style="margin-bottom:8px">
-        <input type="text" id="comm-search" placeholder="내용 또는 공구사 검색" style="width:100%;max-width:320px">
-      </div>
-      <div class="comm-feed" id="comm-feed"></div>
+      <div class="vendor-grid" id="comm-vendor-grid"></div>
+      <div id="comm-vendor-detail" style="display:none;margin-top:4px"></div>
     </section>
 
   </main>
@@ -673,7 +682,7 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="bottom-nav-item" data-section="vendorhist"><span class="bnav-icon">🏪</span><span class="bnav-label">공구사</span></div>
   <div class="bottom-nav-item" data-section="tasks"><span class="bnav-icon">✅</span><span class="bnav-label">할일</span></div>
   <div class="bottom-nav-item" data-section="comms"><span class="bnav-icon">💬</span><span class="bnav-label">소통</span></div>
-  <div class="bottom-nav-item" data-section="insta"><span class="bnav-icon">📸</span><span class="bnav-label">인스타</span></div>
+  <div class="bottom-nav-item" data-section="insta"><span class="bnav-icon">📸</span><span class="bnav-label">콘텐츠</span></div>
 </nav>
 
 <script>
@@ -1086,6 +1095,7 @@ function navigateTo(sec) {
   if (sec==='schedule')   renderCalendar();
   if (sec==='gonggu')     renderGonggu();
   if (sec==='vendorhist') renderVendorHistory();
+  if (sec==='comms')      renderCommVendors();
   if (sec==='insta')      renderInstaFeed();
 }
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -1823,120 +1833,162 @@ function toggleEvStep(evId, idx, checked) {
 }
 
 // ══════════════ ④ 공구사 현황 (누적 이력) ══════════════
-function renderVendorHistory() {
-  const el = document.getElementById('vendor-hist-list');
-  const sorted = [...S.vendors].sort((a, b) => {
+let selectedVendorHistId = null;
+
+function sortedVendors() {
+  return [...S.vendors].sort((a, b) => {
     const lastA = S.comms.filter(c=>c.vendorId===a.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
     const lastB = S.comms.filter(c=>c.vendorId===b.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
-    const da = lastA ? lastA.date : '0000-00-00';
-    const db = lastB ? lastB.date : '0000-00-00';
-    return db.localeCompare(da);
+    return (lastB ? lastB.date : '0000-00-00').localeCompare(lastA ? lastA.date : '0000-00-00');
   });
-  el.innerHTML = sorted.map(v => {
-    const evs   = S.events.filter(e=>e.vendorId===v.id).sort((a,b)=>evStart(b).localeCompare(evStart(a)));
-    const lastComm = [...S.comms].filter(c=>c.vendorId===v.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
-    const hasInfo = v.website || v.contact || v.contactPerson;
+}
+
+function renderVendorHistory() {
+  renderVendorHistGrid();
+  if (selectedVendorHistId) renderVendorHistDetail(selectedVendorHistId);
+}
+
+function renderVendorHistGrid() {
+  const grid = document.getElementById('vendor-hist-grid'); if (!grid) return;
+  const sorted = sortedVendors();
+  if (!sorted.length) { grid.innerHTML = '<div class="empty-zone">등록된 공구사가 없어요</div>'; return; }
+  grid.innerHTML = sorted.map(v => {
+    const lastComm = S.comms.filter(c=>c.vendorId===v.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const evCount  = S.events.filter(e=>e.vendorId===v.id).length;
     return `
-    <div class="card" id="vendor-card-${v.id}" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${hasInfo?'8':'14'}px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="font-size:16px;font-weight:700;color:var(--brown)">${v.name}</div>
-          <span class="badge ${v.paused?'badge-gray':'badge-green'}">${v.paused?'보류':'활성'}</span>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="openVendorEdit('${v.id}')" class="btn btn-sm btn-outline">편집</button>
-          ${v.paused
-            ? `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">활성화</button>
-               <button onclick="deleteVendorPermanent('${v.id}')" class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none">삭제</button>`
-            : `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">보류</button>`
-          }
-        </div>
+    <div class="vendor-card ${selectedVendorHistId===v.id?'selected':''} ${v.paused?'paused':''}" onclick="selectVendorHist('${v.id}')">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <div class="vendor-name" style="font-size:13px;margin:0">${v.name}</div>
+        <span class="badge ${v.paused?'badge-gray':'badge-green'}" style="font-size:10px">${v.paused?'보류':'활성'}</span>
       </div>
-      ${hasInfo ? `
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;padding:8px 10px;background:var(--cream2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-mid)">
-        ${v.website ? `<a href="${v.website}" target="_blank" style="color:var(--brown);text-decoration:none;display:flex;align-items:center;gap:4px">🌐 <span>${v.website.replace(/^https?:\/\//, '')}</span></a>` : ''}
-        ${v.contact ? `<span style="display:flex;align-items:center;gap:4px">📞 ${v.contact}</span>` : ''}
-        ${v.contactPerson ? `<span style="display:flex;align-items:center;gap:4px">👤 ${v.contactPerson}</span>` : ''}
-        ${v.contactEmail ? `<a href="mailto:${v.contactEmail}" style="color:var(--brown);text-decoration:none;display:flex;align-items:center;gap:4px">✉️ ${v.contactEmail}</a>` : ''}
-      </div>` : ''}
-      <div class="vendor-hist-two-col">
-        <div>
-          <div class="detail-section-label" style="margin-bottom:8px">공구 이력 (${evs.length}건)</div>
-          ${evs.length ? evs.map(ev => {
-            const active = evIsActive(ev);
-            const prog = getEvProg(ev.id);
-            const sales = parseFloat(prog.sales) || 0;
-            return `<div onclick="showEvPopup('${ev.id}')" style="padding:7px 0;border-bottom:1px solid var(--cream2);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background='var(--cream2)'" onmouseout="this.style.background=''">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-                <span class="badge ${active?evBadgeCls(ev):'badge-gray'}" style="font-size:10px;flex-shrink:0">${active?evDdayLabel(ev):'종료'}</span>
-                <div style="flex:1;font-size:13px;color:var(--text-dark);font-weight:500">${ev.title}</div>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding-left:2px">
-                <span style="font-size:11px;color:var(--text-light)">${evFmtDate(ev)}</span>
-                ${sales ? `<span style="font-size:11px;font-weight:600;color:#3A9A5C">${Math.round(sales).toLocaleString('ko-KR')}원</span>` : ''}
-              </div>
-            </div>`;
-          }).join('') : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
-        </div>
-        <div>
-          <div class="detail-section-label" style="margin-bottom:8px">최근 소통</div>
-          ${lastComm ? `
-            <div style="padding:7px 0">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                <span class="badge ${typeColor(lastComm.type)}" style="font-size:10px">${lastComm.type}</span>
-                <span style="font-size:11px;color:var(--text-light)">${lastComm.date}</span>
-              </div>
-              <div style="font-size:13px;color:var(--text-dark);line-height:1.5">${lastComm.content.length>60?lastComm.content.slice(0,60)+'…':lastComm.content}</div>
-            </div>`
-          : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
-        </div>
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:4px">
+        ${lastComm ? `최근 소통 ${fmtDate(lastComm.date)}` : '소통 없음'}
       </div>
+      <div style="font-size:12px;color:var(--text-mid)">공구 ${evCount}건</div>
     </div>`;
   }).join('');
 }
 
+function selectVendorHist(vId) {
+  const detail = document.getElementById('vendor-hist-detail');
+  if (selectedVendorHistId === vId) {
+    selectedVendorHistId = null;
+    detail.style.display = 'none';
+    renderVendorHistGrid();
+    return;
+  }
+  selectedVendorHistId = vId;
+  renderVendorHistGrid();
+  detail.style.display = 'block';
+  renderVendorHistDetail(vId);
+  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderVendorHistDetail(vId) {
+  const el = document.getElementById('vendor-hist-detail'); if (!el) return;
+  const v = S.vendors.find(v=>v.id===vId); if (!v) return;
+  const evs      = S.events.filter(e=>e.vendorId===vId).sort((a,b)=>evStart(b).localeCompare(evStart(a)));
+  const lastComm = S.comms.filter(c=>c.vendorId===vId).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const hasInfo  = v.website || v.contact || v.contactPerson || v.contactEmail;
+  el.innerHTML = `
+  <div class="card" id="vendor-hist-detail-card" style="box-shadow:var(--shadow-md)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px;font-weight:700;color:var(--text-dark)">${v.name}</span>
+        <span class="badge ${v.paused?'badge-gray':'badge-green'}">${v.paused?'보류':'활성'}</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="openVendorEdit('${v.id}')" class="btn btn-sm btn-outline">편집</button>
+        ${v.paused
+          ? `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">활성화</button>
+             <button onclick="deleteVendorPermanent('${v.id}')" class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none">삭제</button>`
+          : `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">보류</button>`}
+        <button onclick="selectVendorHist('${vId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light);line-height:1">✕</button>
+      </div>
+    </div>
+    ${hasInfo ? `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:10px 12px;background:var(--cream2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-mid)">
+      ${v.website ? `<a href="${v.website}" target="_blank" style="color:var(--brown);text-decoration:none">🌐 ${v.website.replace(/^https?:\/\//,'')}</a>` : ''}
+      ${v.contact ? `<span>📞 ${v.contact}</span>` : ''}
+      ${v.contactPerson ? `<span>👤 ${v.contactPerson}</span>` : ''}
+      ${v.contactEmail ? `<a href="mailto:${v.contactEmail}" style="color:var(--brown);text-decoration:none">✉️ ${v.contactEmail}</a>` : ''}
+    </div>` : ''}
+    <div class="vendor-hist-two-col">
+      <div>
+        <div class="detail-section-label" style="margin-bottom:10px">공구 이력 (${evs.length}건)</div>
+        ${evs.length ? evs.map(ev => {
+          const active = evIsActive(ev);
+          const prog = getEvProg(ev.id);
+          const sales = parseFloat(prog.sales) || 0;
+          return `<div onclick="showEvPopup('${ev.id}')" style="padding:8px 0;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--cream2)'" onmouseout="this.style.background=''">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <span class="badge ${active?evBadgeCls(ev):'badge-gray'}" style="font-size:10px;flex-shrink:0">${active?evDdayLabel(ev):'종료'}</span>
+              <div style="flex:1;font-size:13px;font-weight:500">${ev.title}</div>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="font-size:11px;color:var(--text-light)">${evFmtDate(ev)}</span>
+              ${sales ? `<span style="font-size:11px;font-weight:600;color:#3A9A5C">${Math.round(sales).toLocaleString('ko-KR')}원</span>` : ''}
+            </div>
+          </div>`;
+        }).join('') : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+      <div>
+        <div class="detail-section-label" style="margin-bottom:10px">최근 소통</div>
+        ${lastComm ? `
+        <div style="padding:8px 0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <span class="badge ${typeColor(lastComm.type)}" style="font-size:10px">${lastComm.type}</span>
+            <span style="font-size:11px;color:var(--text-light)">${lastComm.date}</span>
+          </div>
+          <div style="font-size:13px;line-height:1.5">${lastComm.content.length>80?lastComm.content.slice(0,80)+'…':lastComm.content}</div>
+        </div>` : '<div style="font-size:13px;color:var(--text-light)">없음</div>'}
+      </div>
+    </div>
+  </div>`;
+}
+
 function openVendorEdit(id) {
   const v = S.vendors.find(v=>v.id===id); if (!v) return;
-  const card = document.getElementById('vendor-card-'+id); if (!card) return;
+  const card = document.getElementById('vendor-hist-detail-card'); if (!card) return;
   card.innerHTML = `
-    <div style="font-size:15px;font-weight:700;color:var(--brown);margin-bottom:14px">${v.name} 편집</div>
+    <div style="font-size:15px;font-weight:700;color:var(--text-dark);margin-bottom:14px">${v.name} 편집</div>
     <div class="form-row" style="margin-bottom:10px">
       <div class="form-group">
-        <label style="font-size:11px">공구사명</label>
+        <label>공구사명</label>
         <input type="text" id="ve-name-${id}" value="${v.name}" style="width:140px">
       </div>
       <div class="form-group" style="flex:1">
-        <label style="font-size:11px">공식 홈페이지</label>
+        <label>공식 홈페이지</label>
         <input type="text" id="ve-web-${id}" value="${v.website||''}" placeholder="https://..." style="width:100%">
       </div>
     </div>
-    <div class="form-row" style="margin-bottom:10px">
+    <div class="form-row" style="margin-bottom:12px">
       <div class="form-group">
-        <label style="font-size:11px">연락처</label>
+        <label>연락처</label>
         <input type="text" id="ve-contact-${id}" value="${v.contact||''}" placeholder="010-0000-0000" style="width:150px">
       </div>
       <div class="form-group">
-        <label style="font-size:11px">담당자</label>
+        <label>담당자</label>
         <input type="text" id="ve-person-${id}" value="${v.contactPerson||''}" placeholder="이름" style="width:110px">
       </div>
       <div class="form-group" style="flex:1">
-        <label style="font-size:11px">담당자 이메일</label>
+        <label>담당자 이메일</label>
         <input type="text" id="ve-email-${id}" value="${v.contactEmail||''}" placeholder="example@email.com" style="width:100%">
       </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:4px">
+    <div style="display:flex;justify-content:flex-end;gap:6px">
       <button class="btn btn-primary btn-sm" onclick="saveVendorEdit('${id}')">저장</button>
-      <button class="btn btn-outline btn-sm" onclick="renderVendorHistory()">취소</button>
+      <button class="btn btn-outline btn-sm" onclick="renderVendorHistDetail('${id}')">취소</button>
     </div>`;
 }
 function saveVendorEdit(id) {
   const v = S.vendors.find(v=>v.id===id); if (!v) return;
-  v.name          = document.getElementById('ve-name-'+id).value.trim()    || v.name;
+  v.name          = document.getElementById('ve-name-'+id).value.trim() || v.name;
   v.website       = document.getElementById('ve-web-'+id).value.trim();
   v.contact       = document.getElementById('ve-contact-'+id).value.trim();
   v.contactPerson = document.getElementById('ve-person-'+id).value.trim();
   v.contactEmail  = document.getElementById('ve-email-'+id).value.trim();
-  save(); refreshVendorSelects(); renderVendorHistory();
+  save(); refreshVendorSelects(); renderVendorHistGrid(); renderVendorHistDetail(id);
   toast(`"${v.name}" 정보가 저장되었습니다`);
 }
 
@@ -1963,7 +2015,7 @@ function closeEvPopup() {
 function toggleVendorPaused(id) {
   const v = S.vendors.find(v=>v.id===id); if (!v) return;
   v.paused = !v.paused;
-  save(); refreshVendorSelects(); renderVendorHistory(); renderToday();
+  save(); refreshVendorSelects(); renderVendorHistGrid(); renderVendorHistDetail(id); renderToday();
   toast(v.paused ? `"${v.name}" 보류 처리됨` : `"${v.name}" 활성화됨`);
 }
 function deleteVendorPermanent(id) {
@@ -1976,7 +2028,10 @@ function deleteVendorPermanent(id) {
   S.comms   = S.comms.filter(c=>c.vendorId!==id);
   evIds.forEach(eid=>delete S.evtProgress[eid]);
   delete S.progress[id];
-  save(); refreshVendorSelects(); renderVendorHistory(); renderGonggu(); renderToday(); renderTaskList(); renderCommFeed();
+  selectedVendorHistId = null;
+  const detail = document.getElementById('vendor-hist-detail');
+  if (detail) detail.style.display = 'none';
+  save(); refreshVendorSelects(); renderVendorHistGrid(); renderGonggu(); renderToday(); renderTaskList(); renderCommVendors();
   toast(`"${v.name}" 영구 삭제됨`);
 }
 
@@ -2004,7 +2059,7 @@ function initTaskForm() {
 
 function buildTaskFilters() {
   const el = document.getElementById('task-filters');
-  const assignees = ['김채원', '대표님'];
+  const assignees = ['채원', '대표님'];
   el.innerHTML = `<button class="filter-btn ${taskFilterAssignee==='all'?'active':''}" data-assignee="all">전체</button>` +
     assignees.map(a=>`<button class="filter-btn ${taskFilterAssignee===a?'active':''}" data-assignee="${a}">${a}</button>`).join('') +
     `<button class="filter-btn ${taskFilterAssignee==='none'?'active':''}" data-assignee="none">미지정</button>`;
@@ -2098,11 +2153,20 @@ function initInstaForm() {
 
 function renderInstaEvents() {
   const grid = document.getElementById('insta-event-grid'); if (!grid) return;
-  const evs = [...S.events].sort((a,b) => evStart(b).localeCompare(evStart(a)));
+  const evs = [...S.events].sort((a, b) => {
+    const lastA = S.insta.filter(p=>p.eventId===a.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+    const lastB = S.insta.filter(p=>p.eventId===b.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+    const da = lastA ? lastA.date : '0000-00-00';
+    const db = lastB ? lastB.date : '0000-00-00';
+    if (db !== da) return db.localeCompare(da);
+    return evStart(b).localeCompare(evStart(a));
+  });
   if (!evs.length) { grid.innerHTML = '<div class="empty-zone">등록된 공구가 없어요</div>'; return; }
   grid.innerHTML = evs.map(ev => {
     const isActive = evIsActive(ev);
-    const count = S.insta.filter(p => p.eventId === ev.id).length;
+    const posts = S.insta.filter(p => p.eventId === ev.id);
+    const count = posts.length;
+    const lastPost = posts.sort((a,b)=>b.date.localeCompare(a.date))[0];
     return `
     <div class="vendor-card ${selectedInstaEvId===ev.id?'selected':''} ${!isActive?'paused':''}" onclick="selectInstaEvent('${ev.id}')">
       <div class="vendor-name" style="font-size:13px;margin-bottom:6px">${ev.title}</div>
@@ -2113,6 +2177,7 @@ function renderInstaEvents() {
       <div style="font-size:12px;color:${count?'var(--brown)':'var(--text-light)'};font-weight:${count?'600':'400'}">
         📸 ${count ? `${count}건` : '없음'}
       </div>
+      ${lastPost ? `<div style="font-size:11px;color:var(--text-light);margin-top:4px">최근 ${fmtDate(lastPost.date)}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -2227,11 +2292,10 @@ function deleteInstaPost(id) {
 function renderInstaFeed() { renderInstaEvents(); }
 
 // ══════════════ ⑤ 소통 기록 ══════════════
-let commSearch='';
+let selectedCommVendorId = null;
 
 function initCommForm() {
   document.getElementById('comm-date').value = todayStr();
-  document.getElementById('comm-search').addEventListener('input', function(){ commSearch=this.value.trim(); renderCommFeed(); });
   const vSel = document.getElementById('comm-vendor');
   vSel.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
   vSel.addEventListener('change', ()=>{
@@ -2246,35 +2310,84 @@ function initCommForm() {
     document.getElementById('newevent-section').classList.toggle('open', this.checked);
   });
   document.getElementById('btn-add-comm').addEventListener('click', addComm);
+  renderCommVendors();
 }
 
 function renderCommFeed() {
-  const el = document.getElementById('comm-feed');
-  let comms = [...S.comms].sort((a,b)=>b.date.localeCompare(a.date));
-  if (commSearch) {
-    const q = commSearch.toLowerCase();
-    comms = comms.filter(c => c.content.toLowerCase().includes(q) || vendorName(c.vendorId).toLowerCase().includes(q));
+  renderCommVendors();
+  if (selectedCommVendorId) renderCommForVendor(selectedCommVendorId);
+}
+
+function renderCommVendors() {
+  const grid = document.getElementById('comm-vendor-grid'); if (!grid) return;
+  const vendors = [...S.vendors].filter(v => S.comms.some(c=>c.vendorId===v.id));
+  if (!vendors.length) {
+    grid.innerHTML = '<div class="empty-zone">소통 기록이 없어요</div>';
+    return;
   }
-  if (!comms.length) { el.innerHTML='<div style="color:var(--text-light);font-size:13px;padding:16px;text-align:center">소통 기록이 없습니다</div>'; return; }
-  el.innerHTML = comms.map(c=>{
-    const ft = c.followUpTaskId ? taskById(c.followUpTaskId) : null;
-    const ev = c.eventId ? eventById(c.eventId) : null;
+  const sorted = vendors.sort((a,b)=>{
+    const la = S.comms.filter(c=>c.vendorId===a.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+    const lb = S.comms.filter(c=>c.vendorId===b.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+    return (lb ? lb.date : '0000-00-00').localeCompare(la ? la.date : '0000-00-00');
+  });
+  grid.innerHTML = sorted.map(v => {
+    const comms   = S.comms.filter(c=>c.vendorId===v.id);
+    const lastComm = comms.sort((a,b)=>b.date.localeCompare(a.date))[0];
     return `
-    <div class="comm-item" id="comm-item-${c.id}">
-      <div class="comm-item-header">
-        <span class="badge ${typeColor(c.type)}">${c.type}</span>
-        <span class="today-vendor-tag">${vendorName(c.vendorId)}</span>
-        <span style="font-size:12px;color:var(--text-light)">${c.date}</span>
-        ${ev?`<span class="badge badge-brown" style="font-size:10px">${ev.title}</span>`:''}
+    <div class="vendor-card ${selectedCommVendorId===v.id?'selected':''}" onclick="selectCommVendor('${v.id}')">
+      <div class="vendor-name" style="font-size:13px;margin-bottom:8px">${v.name}</div>
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:4px">
+        ${lastComm ? `최근 소통 ${fmtDate(lastComm.date)}` : '소통 없음'}
       </div>
-      <div class="comm-item-content">${c.content}</div>
-      ${ft?`<div class="comm-item-followup" onclick="gotoTasks()">후속 할 일: ${ft.content} ${ft.done?'✅':'→ 미완료'}</div>`:''}
-      <div style="text-align:right;margin-top:6px;display:flex;gap:6px;justify-content:flex-end">
-        <button class="btn btn-sm btn-outline" onclick="openCommEdit('${c.id}')">수정</button>
-        <button class="btn btn-sm" style="background:var(--red-light);color:var(--red)" onclick="deleteComm('${c.id}')">삭제</button>
-      </div>
+      <div style="font-size:12px;color:var(--text-mid)">총 ${comms.length}건</div>
     </div>`;
   }).join('');
+}
+
+function selectCommVendor(vId) {
+  const detail = document.getElementById('comm-vendor-detail');
+  if (selectedCommVendorId === vId) {
+    selectedCommVendorId = null;
+    detail.style.display = 'none';
+    renderCommVendors();
+    return;
+  }
+  selectedCommVendorId = vId;
+  renderCommVendors();
+  detail.style.display = 'block';
+  renderCommForVendor(vId);
+  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderCommForVendor(vId) {
+  const el = document.getElementById('comm-vendor-detail'); if (!el) return;
+  const v = S.vendors.find(v=>v.id===vId); if (!v) return;
+  const comms = S.comms.filter(c=>c.vendorId===vId).sort((a,b)=>b.date.localeCompare(a.date));
+  el.innerHTML = `
+  <div class="card" style="box-shadow:var(--shadow-md)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:15px;font-weight:700;color:var(--text-dark)">${v.name} 소통 기록 (${comms.length}건)</span>
+      <button onclick="selectCommVendor('${vId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light);line-height:1">✕</button>
+    </div>
+    ${comms.length ? comms.map(c=>{
+      const ft = c.followUpTaskId ? taskById(c.followUpTaskId) : null;
+      const ev = c.eventId ? eventById(c.eventId) : null;
+      return `
+      <div class="comm-item" id="comm-item-${c.id}">
+        <div class="comm-item-header">
+          <span class="badge ${typeColor(c.type)}">${c.type}</span>
+          <span style="font-size:12px;color:var(--text-light)">${c.date}</span>
+          ${ev?`<span class="badge badge-brown" style="font-size:10px">${ev.title}</span>`:''}
+        </div>
+        <div class="comm-item-content">${c.content}</div>
+        ${ft?`<div class="comm-item-followup" onclick="gotoTasks()">후속 할 일: ${ft.content} ${ft.done?'✅':'→ 미완료'}</div>`:''}
+        <div style="text-align:right;margin-top:6px;display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn btn-sm btn-outline" onclick="openCommEdit('${c.id}')">수정</button>
+          <button class="btn btn-sm" style="background:var(--red-light);color:var(--red)" onclick="deleteComm('${c.id}')">삭제</button>
+        </div>
+      </div>`;
+    }).join('') : '<div style="color:var(--text-light);font-size:13px;padding:8px 0">기록 없음</div>'}
+  </div>`;
 }
 
 function addComm() {
@@ -2365,7 +2478,7 @@ function openTaskEdit(id) {
           <label style="font-size:11px">담당자</label>
           <select id="edit-task-assignee-${id}">
             <option value="" ${!t.assignee?'selected':''}>없음</option>
-            <option value="김채원" ${t.assignee==='김채원'?'selected':''}>김채원</option>
+            <option value="채원" ${t.assignee==='채원'?'selected':''}>채원</option>
             <option value="대표님" ${t.assignee==='대표님'?'selected':''}>대표님</option>
           </select>
         </div>
@@ -2576,9 +2689,21 @@ async function init() {
   buildTaskFilters();
   renderToday();
   renderGonggu();
-  renderVendorHistory();
+  renderVendorHistGrid();
   renderTaskList();
-  renderCommFeed();
+  renderCommVendors();
+
+  document.getElementById('btn-add-vendor').addEventListener('click', () => {
+    const nameEl = document.getElementById('new-vendor-name');
+    const name = nameEl.value.trim();
+    if (!name) { toast('공구사 이름을 입력해 주세요'); return; }
+    if (S.vendors.some(v => v.name === name)) { toast('이미 등록된 공구사입니다'); return; }
+    const id = genId('v');
+    S.vendors.push({ id, name, paused: false });
+    nameEl.value = '';
+    save(); refreshVendorSelects(); renderVendorHistGrid();
+    toast(`"${name}" 추가됨`);
+  });
 }
 
 init();
