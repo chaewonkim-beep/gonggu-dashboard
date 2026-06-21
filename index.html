@@ -816,7 +816,7 @@ const DEFAULT_COMMS = [
   { id: 'c-001', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-12', type: '확인', content: '오픈 일정 최종 확인 완료, 6/15 예정대로 진행',  followUpTaskId: null },
   { id: 'c-004', vendorId: 'baobab',   eventId: 'evt-001', date: '2026-06-08', type: '전달', content: '이벤트 배너 이미지 최종 확인 필요',               followUpTaskId: 't-003' },
 ];
-const PROGRESS_STEPS = ['일정 확정','상품 확정','샘플수령 완료','이벤트 확인','콘텐츠팀 전달','공구 오픈','판매량 공유','자료나눔 신청서 확인','공구 마감'];
+const PROGRESS_STEPS = ['일정 확정','상품 확정','샘플수령 완료','이벤트 확인','공구 글 작성','콘텐츠팀 전달','공구 오픈','판매량 공유','자료나눔 신청서 확인','공구 마감','세금계산서 발행'];
 const DEFAULT_EVENT_PROGRESS = {
   'evt-001': { checked:[true, true, true, true, true, true, false, false] },
   'evt-002': { checked:[true, true, false,false,false,false,false,false] },
@@ -2326,7 +2326,7 @@ function renderInstaEvents() {
         <span style="font-size:11px;color:var(--text-light)">${evFmtDate(ev)}</span>
       </div>
       <div style="font-size:12px;color:${count?'var(--brown)':'var(--text-light)'};font-weight:${count?'600':'400'}">
-        📸 ${count ? `${count}건` : '없음'}
+        ${count ? `${count}건` : '없음'}
       </div>
       ${lastPost ? `<div style="font-size:11px;color:var(--text-light);margin-top:4px">최근 ${fmtDate(lastPost.date)}</div>` : ''}
     </div>`;
