@@ -439,32 +439,7 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ② 공구 일정 -->
     <section id="section-schedule" class="section">
       <div class="section-title">📅 공구 일정</div>
-      <div class="task-add-form" style="margin-bottom:20px">
-        <h3>일정 추가</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label>공구사</label>
-            <input type="text" id="event-vendor" list="event-vendor-list" placeholder="공구사 선택 또는 새 이름 입력" style="width:160px">
-            <datalist id="event-vendor-list"></datalist>
-          </div>
-          <div class="form-group">
-            <label>시작 날짜</label>
-            <input type="text" id="event-startdate" placeholder="YYYY-MM-DD" data-di="1">
-          </div>
-          <div class="form-group">
-            <label>종료 날짜 (선택)</label>
-            <input type="text" id="event-enddate" placeholder="YYYY-MM-DD" data-di="1">
-          </div>
-          <div class="form-group" style="flex:1">
-            <label>일정 제목</label>
-            <input type="text" id="event-title" placeholder="예: 낼나 타임타이머 공구">
-          </div>
-          <div class="form-group" style="justify-content:flex-end">
-            <label style="visibility:hidden">버튼</label>
-            <button class="btn btn-primary" id="btn-add-event">추가</button>
-          </div>
-        </div>
-      </div>
+      <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">캘린더 날짜를 클릭해서 새로운 일정을 입력하세요</div>
       <div class="schedule-layout" style="align-items:start">
         <div class="calendar-card">
           <div class="cal-header">
@@ -481,6 +456,7 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ③ 공구 현황 (공구별 단계 관리) -->
     <section id="section-gonggu" class="section">
       <div class="section-title">📊 공구 현황</div>
+      <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">공구 카드를 클릭하면 단계별 진행 현황과 상세 정보를 확인할 수 있어요</div>
       <div class="vendor-grid" id="gonggu-grid"></div>
       <div id="gonggu-detail-panel" class="card" style="display:none;margin-top:20px;box-shadow:var(--shadow-md)"></div>
     </section>
@@ -488,14 +464,11 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ④ 공구사 현황 (누적 이력) -->
     <section id="section-vendorhist" class="section">
       <div class="section-title">🏪 공구사 현황</div>
+      <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">공구사 카드를 클릭하면 공구 이력과 소통 내용을 확인할 수 있어요</div>
       <div class="card" style="margin-bottom:20px">
-        <h3 style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:12px">공구사 추가</h3>
-        <div style="display:flex;gap:8px;align-items:flex-end">
-          <div class="form-group" style="flex:1">
-            <label>공구사명</label>
-            <input type="text" id="new-vendor-name" placeholder="공구사 이름">
-          </div>
-          <button class="btn btn-primary" id="btn-add-vendor">추가</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="new-vendor-name" placeholder="🏪 새로운 공구사를 추가하세요  예) 낼나" style="flex:1">
+          <button class="btn btn-primary" id="btn-add-vendor" style="flex-shrink:0">추가</button>
         </div>
       </div>
       <div class="vendor-grid" id="vendor-hist-grid"></div>
@@ -505,39 +478,11 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ⑤ 할 일 -->
     <section id="section-tasks" class="section">
       <div class="section-title">✅ 할 일</div>
+      <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">내용을 입력하고 추가 버튼을 누르면 공구사·담당자·날짜를 지정할 수 있어요</div>
       <div class="task-add-form">
-        <h3>할 일 추가</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label>공구사</label>
-            <select id="task-vendor"></select>
-          </div>
-          <div class="form-group">
-            <label>연결 일정 (선택)</label>
-            <select id="task-event"><option value="">없음</option></select>
-          </div>
-          <div class="form-group">
-            <label>담당자</label>
-            <select id="task-assignee">
-              <option value="">없음</option>
-              <option value="채원">채원</option>
-              <option value="대표님">대표님</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>날짜</label>
-            <input type="text" id="task-date" placeholder="YYYY-MM-DD" data-di="1">
-          </div>
-          <div class="form-group" style="flex:1">
-            <label>내용</label>
-            <input type="text" id="task-content" placeholder="할 일 내용 입력 후 Enter 또는 추가 버튼">
-          </div>
-          <div class="form-group" style="justify-content:flex-end">
-            <label style="visibility:hidden">버튼</label>
-            <button class="btn btn-primary" id="btn-add-task">추가</button>
-          </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="task-content" placeholder="✅ 어떤 일을 추가할까요?" style="flex:1">
+          <button class="btn btn-primary" id="btn-add-task" style="flex-shrink:0">추가</button>
         </div>
       </div>
       <div class="task-filters" id="task-filters"></div>
@@ -551,6 +496,13 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ⑦ 인스타그램 컨텐츠 -->
     <section id="section-insta" class="section">
       <div class="section-title">📸 콘텐츠 기록</div>
+      <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">업로드한 콘텐츠 URL을 기록하고 공구별로 모아볼 수 있어요</div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="insta-quick-url" placeholder="📸 새 콘텐츠 완성! URL을 여기에 남겨요" style="flex:1">
+          <button class="btn btn-primary" id="btn-add-insta-quick" style="flex-shrink:0">추가</button>
+        </div>
+      </div>
       <div class="vendor-grid" id="insta-event-grid"></div>
       <div id="insta-event-detail" style="display:none;margin-top:4px"></div>
     </section>
@@ -558,71 +510,12 @@ textarea { resize: vertical; min-height: 60px; }
     <!-- ⑥ 소통 기록 -->
     <section id="section-comms" class="section">
       <div class="section-title">💬 소통 기록</div>
+      <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">공구사와 나눈 소통 내용을 기록하고 공구사별로 모아볼 수 있어요</div>
       <div class="comm-add-form">
-        <h3>소통 기록 추가</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label>공구사</label>
-            <select id="comm-vendor"><option value="">공구사 선택</option></select>
-          </div>
-          <div class="form-group">
-            <label>유형</label>
-            <select id="comm-type">
-              <option value="일정">일정</option>
-              <option value="품목">품목</option>
-              <option value="전달">전달</option>
-              <option value="확인">확인</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>연결 일정 (선택)</label>
-            <select id="comm-event"><option value="">없음</option></select>
-          </div>
-          <div class="form-group">
-            <label>날짜</label>
-            <input type="text" id="comm-date" placeholder="YYYY-MM-DD" data-di="1">
-          </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <textarea id="comm-content" placeholder="💬 오늘의 소통 내용을 적어요" style="flex:1;min-height:60px;resize:vertical"></textarea>
+          <button class="btn btn-primary" id="btn-add-comm" style="flex-shrink:0;align-self:flex-end">추가</button>
         </div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>내용</label>
-          <textarea id="comm-content" placeholder="소통 내용을 입력하세요"></textarea>
-        </div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
-          <label class="checkbox-label">
-            <input type="checkbox" id="comm-followup-check">
-            후속 할 일 만들기
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="comm-newevent-check">
-            공구 일정 등록
-          </label>
-        </div>
-        <div id="followup-section" class="followup-section" style="margin-bottom:8px">
-          <div class="followup-label">후속 할 일 내용</div>
-          <div class="form-row">
-            <div class="form-group" style="flex:1">
-              <input type="text" id="followup-content" placeholder="후속 할 일 내용">
-            </div>
-          </div>
-        </div>
-        <div id="newevent-section" class="followup-section" style="margin-bottom:8px">
-          <div class="followup-label">새 공구 일정</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>시작 날짜</label>
-              <input type="text" id="newevent-date" placeholder="YYYY-MM-DD" data-di="1">
-            </div>
-            <div class="form-group">
-              <label>종료 날짜 (선택)</label>
-              <input type="text" id="newevent-enddate" placeholder="YYYY-MM-DD" data-di="1">
-            </div>
-            <div class="form-group" style="flex:1">
-              <label>일정 제목</label>
-              <input type="text" id="newevent-title" placeholder="예: 낼나 타임타이머 공구">
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="btn-add-comm" style="margin-top:4px">저장</button>
       </div>
       <div class="vendor-grid" id="comm-vendor-grid"></div>
       <div id="comm-vendor-detail" style="display:none;margin-top:4px"></div>
@@ -666,6 +559,89 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <!-- 캘린더 날짜 팝업 -->
+<!-- 할 일 상세 팝업 -->
+<div id="task-popup-overlay" onclick="closeTaskPopup()" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(61,43,31,0.25)"></div>
+<div id="task-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:201;background:#fff;border-radius:var(--radius);padding:20px;width:min(360px,92vw);box-shadow:var(--shadow-md)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:700;color:var(--text-dark)" id="task-popup-title">할 일 추가</div>
+    <button onclick="closeTaskPopup()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-light);line-height:1">✕</button>
+  </div>
+  <div id="task-popup-content-preview" style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:14px;padding:8px 10px;background:var(--cream2);border-radius:var(--radius-sm)"></div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="form-group" style="margin:0">
+      <label>공구사</label>
+      <select id="task-popup-vendor">
+        <option value="">선택 안 함</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label>연결 일정 (선택)</label>
+      <select id="task-popup-event"><option value="">없음</option></select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label>담당자</label>
+      <select id="task-popup-assignee">
+        <option value="">없음</option>
+        <option value="채원">채원</option>
+        <option value="대표님">대표님</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label>날짜</label>
+      <input type="text" id="task-popup-date" placeholder="YYYY-MM-DD" data-di="1">
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="confirmAddTask()">추가</button>
+  </div>
+</div>
+
+<!-- 소통기록 상세 팝업 -->
+<div id="comm-popup-overlay" onclick="closeCommPopup()" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(61,43,31,0.25)"></div>
+<div id="comm-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:201;background:#fff;border-radius:var(--radius);padding:20px;width:min(360px,92vw);box-shadow:var(--shadow-md)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:700;color:var(--text-dark)">소통 기록 추가</div>
+    <button onclick="closeCommPopup()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-light);line-height:1">✕</button>
+  </div>
+  <div id="comm-popup-content-preview" style="font-size:13px;color:var(--text-mid);margin-bottom:14px;padding:8px 10px;background:var(--cream2);border-radius:var(--radius-sm);line-height:1.5;white-space:pre-wrap;word-break:break-all"></div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="form-group" style="margin:0">
+      <label>공구사</label>
+      <select id="comm-popup-vendor">
+        <option value="">선택 안 함</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label>연결 일정 (선택)</label>
+      <select id="comm-popup-event"><option value="">없음</option></select>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="confirmAddComm()">저장</button>
+  </div>
+</div>
+
+<!-- 콘텐츠 빠른 추가 팝업 -->
+<div id="insta-popup-overlay" onclick="closeInstaPopup()" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(61,43,31,0.25)"></div>
+<div id="insta-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:201;background:#fff;border-radius:var(--radius);padding:20px;width:min(360px,92vw);box-shadow:var(--shadow-md)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:700;color:var(--text-dark)">콘텐츠 기록 추가</div>
+    <button onclick="closeInstaPopup()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-light);line-height:1">✕</button>
+  </div>
+  <div id="insta-popup-url-preview" style="font-size:12px;color:var(--brown);margin-bottom:14px;padding:8px 10px;background:var(--cream2);border-radius:var(--radius-sm);word-break:break-all"></div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="form-group" style="margin:0">
+      <label>날짜</label>
+      <div style="font-size:13px;font-weight:600;color:var(--text-dark);padding:6px 0" id="insta-popup-date-display"></div>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label>관련 공구</label>
+      <select id="insta-popup-event"><option value="">선택 안 함</option></select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label>메모 (선택)</label>
+      <input type="text" id="insta-popup-memo" placeholder="콘텐츠 내용 요약">
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="confirmAddInstaQuick()">저장</button>
+  </div>
+</div>
+
 <div id="cal-popup-overlay" onclick="closeCalPopup()"></div>
 <div id="cal-popup">
   <div class="cal-popup-header">
@@ -673,6 +649,28 @@ textarea { resize: vertical; min-height: 60px; }
     <button class="cal-popup-close" onclick="closeCalPopup()">✕</button>
   </div>
   <div id="cal-popup-body"></div>
+  <!-- 일정 추가 폼 (빈 날짜 클릭 시 표시) -->
+  <div id="cal-popup-add-form" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-light)">
+    <div style="font-size:12px;font-weight:700;color:var(--text-mid);margin-bottom:10px;letter-spacing:0.3px">일정 추가</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="form-group" style="margin:0">
+        <label>공구사</label>
+        <input type="text" id="popup-event-vendor" list="popup-event-vendor-list" placeholder="공구사 선택 또는 새 이름 입력">
+        <datalist id="popup-event-vendor-list"></datalist>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>품목</label>
+        <input type="text" id="popup-event-title" placeholder="예: 타임타이머">
+      </div>
+      <div style="display:flex;gap:8px">
+        <div class="form-group" style="margin:0;flex:1">
+          <label>종료 날짜 (선택)</label>
+          <input type="text" id="popup-event-enddate" placeholder="YYYY-MM-DD" data-di="1">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:2px" onclick="addEventFromPopup()">추가</button>
+    </div>
+  </div>
 </div>
 
 <nav id="bottom-nav">
@@ -1346,7 +1344,7 @@ function toggleEventLinks(btn, evId, type) {
   if (panel.classList.contains('open')) { panel.classList.remove('open'); return; }
   const items = type==='tasks'
     ? S.tasks.filter(t=>t.eventId===evId&&!t.archived).map(t=>`<div class="linked-item">${t.content} <span class="badge ${t.done?'badge-gray':'badge-yellow'}" style="font-size:10px">${t.done?'완료':'진행'}</span></div>`)
-    : S.comms.filter(c=>c.eventId===evId).map(c=>`<div class="linked-item">[${c.type}] ${fmtDate(c.date)} ${c.content}</div>`);
+    : S.comms.filter(c=>c.eventId===evId).map(c=>`<div class="linked-item">${fmtDate(c.date)} ${c.content}</div>`);
   panel.innerHTML = items.join('');
   panel.classList.add('open');
 }
@@ -1354,23 +1352,31 @@ function toggleEventLinks(btn, evId, type) {
 document.getElementById('cal-prev').addEventListener('click', ()=>{ if(--calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
 document.getElementById('cal-next').addEventListener('click', ()=>{ if(++calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
 
+let _calPopupDate = null;
+
 function calDayClick(ds) {
   const eventsOnDay = S.events.filter(e => {
     const s = evStart(e), en = evEnd(e);
     return en ? (ds >= s && ds <= en) : s === ds;
   });
-  if (!eventsOnDay.length) {
-    document.querySelector('[data-section="schedule"]').click();
-    const f = document.getElementById('event-startdate');
-    f.value = ds;
-    f.focus();
-    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
+  _calPopupDate = ds;
   const [, m, d] = ds.split('-');
   document.getElementById('cal-popup-date').textContent = `${parseInt(m)}월 ${parseInt(d)}일`;
 
+  if (!eventsOnDay.length) {
+    document.getElementById('cal-popup-body').innerHTML = '';
+    // 일정 추가 폼 표시
+    document.getElementById('popup-event-vendor-list').innerHTML = S.vendors.map(v=>`<option value="${v.name}">`).join('');
+    document.getElementById('popup-event-vendor').value = '';
+    document.getElementById('popup-event-title').value = '';
+    document.getElementById('popup-event-enddate').value = '';
+    document.getElementById('cal-popup-add-form').style.display = 'block';
+    document.getElementById('cal-popup-overlay').style.display = 'block';
+    document.getElementById('cal-popup').style.display = 'block';
+    setTimeout(() => document.getElementById('popup-event-vendor').focus(), 80);
+    return;
+  }
+  document.getElementById('cal-popup-add-form').style.display = 'none';
   document.getElementById('cal-popup-body').innerHTML = eventsOnDay.map(ev => {
     const rTasks = S.tasks.filter(t => t.eventId === ev.id && !t.done && !t.archived);
     const rComms = S.comms.filter(c => c.eventId === ev.id);
@@ -1401,14 +1407,19 @@ function calDayClick(ds) {
         <div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px">소통 기록 ${rComms.length}건</div>
         ${rComms.slice(0,2).map(c=>`
           <div style="font-size:12px;color:var(--text-mid);padding:3px 0">
-            <span class="badge ${typeColor(c.type)}" style="font-size:10px">${c.type}</span>
-            <span style="margin-left:4px">${c.content.length>30?c.content.slice(0,30)+'…':c.content}</span>
+            ${c.content.length>30?c.content.slice(0,30)+'…':c.content}
           </div>`).join('')}
         ${rComms.length>2?`<div style="font-size:11px;color:var(--text-light);margin-top:2px">외 ${rComms.length-2}건 더</div>`:''}
       </div>` : ''}
     </div>`;
   }).join('');
 
+  // 이벤트 있는 날짜에도 일정 추가 폼 제공
+  document.getElementById('popup-event-vendor-list').innerHTML = S.vendors.map(v=>`<option value="${v.name}">`).join('');
+  document.getElementById('popup-event-vendor').value = '';
+  document.getElementById('popup-event-title').value = '';
+  document.getElementById('popup-event-enddate').value = '';
+  document.getElementById('cal-popup-add-form').style.display = 'block';
   document.getElementById('cal-popup-overlay').style.display = 'block';
   document.getElementById('cal-popup').style.display = 'block';
 }
@@ -1935,8 +1946,7 @@ function renderVendorHistDetail(vId) {
         <div class="detail-section-label" style="margin-bottom:10px">최근 소통</div>
         ${lastComm ? `
         <div style="padding:8px 0">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-            <span class="badge ${typeColor(lastComm.type)}" style="font-size:10px">${lastComm.type}</span>
+          <div style="margin-bottom:5px">
             <span style="font-size:11px;color:var(--text-light)">${lastComm.date}</span>
           </div>
           <div style="font-size:13px;line-height:1.5">${lastComm.content.length>80?lastComm.content.slice(0,80)+'…':lastComm.content}</div>
@@ -2031,12 +2041,13 @@ function deleteVendorPermanent(id) {
 // ══════════════ ④ 할 일 ══════════════
 let taskFilterAssignee='all', archiveOpen=false;
 
+let _pendingTaskContent = '';
+
 function initTaskForm() {
-  document.getElementById('task-date').value = todayStr();
-  const vSel = document.getElementById('task-vendor');
-  vSel.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  const vSel = document.getElementById('task-popup-vendor');
+  vSel.innerHTML = '<option value="">선택 안 함</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
   vSel.addEventListener('change', ()=>{
-    const evSel = document.getElementById('task-event');
+    const evSel = document.getElementById('task-popup-event');
     evSel.innerHTML = '<option value="">없음</option>' +
       S.events.filter(e=>e.vendorId===vSel.value).map(e=>`<option value="${e.id}">${e.title} (${evFmtDate(e)})</option>`).join('');
   });
@@ -2048,6 +2059,39 @@ function initTaskForm() {
     document.getElementById('archive-list').classList.toggle('open',archiveOpen);
     renderArchive();
   });
+}
+
+function openTaskPopup(content) {
+  _pendingTaskContent = content;
+  document.getElementById('task-popup-content-preview').textContent = content;
+  // 팝업 셀렉트 초기화
+  const vSel = document.getElementById('task-popup-vendor');
+  vSel.innerHTML = '<option value="">선택 안 함</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  document.getElementById('task-popup-event').innerHTML = '<option value="">없음</option>';
+  document.getElementById('task-popup-assignee').value = '';
+  document.getElementById('task-popup-date').value = todayStr();
+  document.getElementById('task-popup-overlay').style.display = 'block';
+  document.getElementById('task-popup').style.display = 'block';
+}
+
+function closeTaskPopup() {
+  document.getElementById('task-popup-overlay').style.display = 'none';
+  document.getElementById('task-popup').style.display = 'none';
+}
+
+function confirmAddTask() {
+  const vendorId = document.getElementById('task-popup-vendor').value;
+  const eventId  = document.getElementById('task-popup-event').value || null;
+  const assignee = document.getElementById('task-popup-assignee').value || null;
+  const dueDate  = document.getElementById('task-popup-date').value.trim() || null;
+  const content  = _pendingTaskContent;
+  if (!content) { toast('내용이 없습니다'); return; }
+  S.tasks.unshift({ id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:todayStr(), dueDate, followUpFromCommId:null, assignee });
+  save();
+  closeTaskPopup();
+  document.getElementById('task-content').value = '';
+  renderTaskList(); renderToday(); renderEventBars();
+  toast('할 일이 추가되었습니다');
 }
 
 function buildTaskFilters() {
@@ -2105,15 +2149,9 @@ function renderArchive() {
 }
 
 function addTask() {
-  const vendorId = document.getElementById('task-vendor').value;
-  const eventId  = document.getElementById('task-event').value || null;
-  const content  = document.getElementById('task-content').value.trim();
-  const dueDate  = document.getElementById('task-date').value.trim() || null;
-  const assignee = document.getElementById('task-assignee').value || null;
+  const content = document.getElementById('task-content').value.trim();
   if (!content) { toast('할 일 내용을 입력해 주세요'); return; }
-  S.tasks.unshift({ id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:todayStr(), dueDate, followUpFromCommId:null, assignee });
-  save(); document.getElementById('task-content').value=''; document.getElementById('task-date').value=todayStr(); document.getElementById('task-assignee').value='';
-  renderTaskList(); renderToday(); renderEventBars(); toast('할 일이 추가되었습니다');
+  openTaskPopup(content);
 }
 
 function toggleTaskDone(id, checked) {
@@ -2140,8 +2178,47 @@ function restoreTask(id) {
 const INSTA_TYPE_COLOR = { 피드:'badge-brown', 스토리:'badge-orange', 릴스:'badge-red' };
 let selectedInstaEvId = null;
 
+let _pendingInstaUrl = '';
+
 function initInstaForm() {
   renderInstaEvents();
+  document.getElementById('btn-add-insta-quick').addEventListener('click', openInstaPopup);
+  document.getElementById('insta-quick-url').addEventListener('keydown', e => {
+    if (e.key === 'Enter') openInstaPopup();
+  });
+}
+
+function openInstaPopup() {
+  const url = document.getElementById('insta-quick-url').value.trim();
+  if (!url) { toast('URL을 입력해 주세요'); return; }
+  _pendingInstaUrl = url;
+  document.getElementById('insta-popup-url-preview').textContent = url;
+  document.getElementById('insta-popup-date-display').textContent = todayStr();
+  document.getElementById('insta-popup-event').innerHTML =
+    '<option value="">선택 안 함</option>' +
+    [...S.events].sort((a,b)=>evStart(b).localeCompare(evStart(a)))
+      .map(e=>`<option value="${e.id}">${e.title} (${vendorName(e.vendorId)})</option>`).join('');
+  document.getElementById('insta-popup-memo').value = '';
+  document.getElementById('insta-popup-overlay').style.display = 'block';
+  document.getElementById('insta-popup').style.display = 'block';
+}
+
+function closeInstaPopup() {
+  document.getElementById('insta-popup-overlay').style.display = 'none';
+  document.getElementById('insta-popup').style.display = 'none';
+}
+
+function confirmAddInstaQuick() {
+  const eventId = document.getElementById('insta-popup-event').value || null;
+  const memo    = document.getElementById('insta-popup-memo').value.trim();
+  const ev      = eventId ? S.events.find(e=>e.id===eventId) : null;
+  S.insta.unshift({ id: genId('ig'), date: todayStr(), type: '피드', vendorId: ev ? ev.vendorId : '', eventId, url: _pendingInstaUrl, memo });
+  save();
+  closeInstaPopup();
+  document.getElementById('insta-quick-url').value = '';
+  renderInstaEvents();
+  if (selectedInstaEvId && selectedInstaEvId === eventId) renderInstaForEvent(eventId);
+  toast('콘텐츠가 추가되었습니다');
 }
 
 function renderInstaEvents() {
@@ -2287,23 +2364,48 @@ function renderInstaFeed() { renderInstaEvents(); }
 // ══════════════ ⑤ 소통 기록 ══════════════
 let selectedCommVendorId = null;
 
+let _pendingCommContent = '';
+
 function initCommForm() {
-  document.getElementById('comm-date').value = todayStr();
-  const vSel = document.getElementById('comm-vendor');
-  vSel.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
-  vSel.addEventListener('change', ()=>{
-    const evSel = document.getElementById('comm-event');
-    evSel.innerHTML = '<option value="">없음</option>' +
-      S.events.filter(e=>e.vendorId===vSel.value).map(e=>`<option value="${e.id}">${e.title} (${evFmtDate(e)})</option>`).join('');
-  });
-  document.getElementById('comm-followup-check').addEventListener('change', function(){
-    document.getElementById('followup-section').classList.toggle('open', this.checked);
-  });
-  document.getElementById('comm-newevent-check').addEventListener('change', function(){
-    document.getElementById('newevent-section').classList.toggle('open', this.checked);
-  });
   document.getElementById('btn-add-comm').addEventListener('click', addComm);
+  document.getElementById('comm-content').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComm(); }
+  });
+  // 팝업 공구사 변경 시 연결 일정 갱신
+  document.getElementById('comm-popup-vendor').addEventListener('change', function() {
+    const evSel = document.getElementById('comm-popup-event');
+    evSel.innerHTML = '<option value="">없음</option>' +
+      S.events.filter(e=>e.vendorId===this.value).map(e=>`<option value="${e.id}">${e.title} (${evFmtDate(e)})</option>`).join('');
+  });
   renderCommVendors();
+}
+
+function openCommPopup(content) {
+  _pendingCommContent = content;
+  document.getElementById('comm-popup-content-preview').textContent = content;
+  document.getElementById('comm-popup-vendor').innerHTML =
+    '<option value="">선택 안 함</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  document.getElementById('comm-popup-event').innerHTML = '<option value="">없음</option>';
+  document.getElementById('comm-popup-overlay').style.display = 'block';
+  document.getElementById('comm-popup').style.display = 'block';
+}
+
+function closeCommPopup() {
+  document.getElementById('comm-popup-overlay').style.display = 'none';
+  document.getElementById('comm-popup').style.display = 'none';
+}
+
+function confirmAddComm() {
+  const vendorId = document.getElementById('comm-popup-vendor').value;
+  const eventId  = document.getElementById('comm-popup-event').value || null;
+  const content  = _pendingCommContent;
+  if (!content) { toast('내용이 없습니다'); return; }
+  S.comms.unshift({ id: genId('c'), vendorId, eventId, date: todayStr(), content, followUpTaskId: null });
+  save();
+  closeCommPopup();
+  document.getElementById('comm-content').value = '';
+  renderCommFeed(); renderToday();
+  toast('소통 기록이 추가되었습니다');
 }
 
 function renderCommFeed() {
@@ -2368,7 +2470,6 @@ function renderCommForVendor(vId) {
       return `
       <div class="comm-item" id="comm-item-${c.id}">
         <div class="comm-item-header">
-          <span class="badge ${typeColor(c.type)}">${c.type}</span>
           <span style="font-size:12px;color:var(--text-light)">${c.date}</span>
           ${ev?`<span class="badge badge-brown" style="font-size:10px">${ev.title}</span>`:''}
         </div>
@@ -2384,56 +2485,9 @@ function renderCommForVendor(vId) {
 }
 
 function addComm() {
-  const vendorId = document.getElementById('comm-vendor').value;
-  const type     = document.getElementById('comm-type').value;
-  let eventId    = document.getElementById('comm-event').value || null;
-  const content  = document.getElementById('comm-content').value.trim();
-  const hasFollowup = document.getElementById('comm-followup-check').checked;
-  const followupContent = document.getElementById('followup-content').value.trim();
-  if (!vendorId) { toast('공구사를 선택해 주세요'); return; }
-  if (!content)  { toast('소통 내용을 입력해 주세요'); return; }
-  if (hasFollowup&&!followupContent) { toast('후속 할 일 내용을 입력해 주세요'); return; }
-
-  const commId = genId('c');
-  let followUpTaskId = null;
-  if (hasFollowup) {
-    const taskId = genId('t');
-    S.tasks.unshift({ id:taskId, vendorId, eventId, content:followupContent, done:false, archived:false, isDefault:false, createdAt:todayStr(), followUpFromCommId:commId });
-    followUpTaskId = taskId;
-  }
-  // 새 공구 일정 생성
-  const hasNewEvent = document.getElementById('comm-newevent-check').checked;
-  const newEventDate    = document.getElementById('newevent-date').value.trim();
-  const newEventEndDate = document.getElementById('newevent-enddate').value.trim() || null;
-  const newEventTitle   = document.getElementById('newevent-title').value.trim();
-  if (hasNewEvent) {
-    if (!newEventDate || !/^\d{4}-\d{2}-\d{2}$/.test(newEventDate)) { toast('일정 시작 날짜를 입력해 주세요 (예: 0307)'); return; }
-    if (!newEventTitle) { toast('일정 제목을 입력해 주세요'); return; }
-    const newEvId = genId('evt');
-    S.events.push({ id: newEvId, vendorId, startDate: newEventDate, endDate: newEventEndDate, title: newEventTitle });
-    eventId = newEvId;
-  }
-
-  const commDate = document.getElementById('comm-date').value.trim() || todayStr();
-  document.getElementById('comm-date').value = todayStr();
-  S.comms.unshift({ id:commId, vendorId, eventId, date:commDate, type, content, followUpTaskId });
-  save();
-
-  document.getElementById('comm-vendor').value='';
-  document.getElementById('comm-content').value='';
-  document.getElementById('comm-followup-check').checked=false;
-  document.getElementById('followup-content').value='';
-  document.getElementById('followup-section').classList.remove('open');
-  document.getElementById('comm-newevent-check').checked=false;
-  document.getElementById('newevent-date').value='';
-  document.getElementById('newevent-enddate').value='';
-  document.getElementById('newevent-title').value='';
-  document.getElementById('newevent-section').classList.remove('open');
-  document.getElementById('comm-event').innerHTML='<option value="">없음</option>';
-
-  renderCommFeed(); renderTaskList(); renderToday(); renderEventBars(); renderCalendar();
-  const msgs = ['소통 기록이 추가되었습니다', hasFollowup && '할 일 생성됨', hasNewEvent && '공구 일정 등록됨'].filter(Boolean);
-  toast(msgs.join(' · '));
+  const content = document.getElementById('comm-content').value.trim();
+  if (!content) { toast('소통 내용을 입력해 주세요'); return; }
+  openCommPopup(content);
 }
 
 function gotoComms() {
@@ -2506,19 +2560,11 @@ function openCommEdit(id) {
   const el = document.getElementById('comm-item-' + id); if (!el) return;
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="form-row" style="margin-bottom:0">
-        <div class="form-group">
-          <label style="font-size:11px">날짜</label>
-          <input type="text" id="edit-comm-date-${id}" value="${c.date}" placeholder="YYYY-MM-DD" data-di="1" style="width:120px">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11px">유형</label>
-          <select id="edit-comm-type-${id}">
-            ${['일정','품목','전달','확인'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
-          </select>
-        </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:11px">날짜</label>
+        <input type="text" id="edit-comm-date-${id}" value="${c.date}" placeholder="YYYY-MM-DD" data-di="1" style="width:140px">
       </div>
-      <div class="form-group">
+      <div class="form-group" style="margin:0">
         <label style="font-size:11px">내용</label>
         <textarea id="edit-comm-content-${id}" style="min-height:70px">${c.content}</textarea>
       </div>
@@ -2533,11 +2579,9 @@ function saveCommEdit(id) {
   const c = S.comms.find(c => c.id === id); if (!c) return;
   const content = document.getElementById('edit-comm-content-'+id).value.trim();
   const date    = document.getElementById('edit-comm-date-'+id).value.trim();
-  const type    = document.getElementById('edit-comm-type-'+id).value;
   if (!content) { toast('내용을 입력해 주세요'); return; }
   c.content = content;
   c.date    = date || c.date;
-  c.type    = type;
   save(); renderCommFeed(); renderToday();
   toast('수정되었습니다');
 }
@@ -2618,31 +2662,24 @@ function deleteEvent(id) {
 
 // ══════════════ ② 일정 추가 폼 ══════════════
 function initEventForm() {
-  document.getElementById('event-vendor-list').innerHTML = S.vendors.map(v=>`<option value="${v.name}">`).join('');
-  document.getElementById('btn-add-event').addEventListener('click', addEvent);
-  document.getElementById('event-title').addEventListener('keydown', e=>{ if(e.key==='Enter') addEvent(); });
+  // 팝업 기반으로 전환 — 별도 초기화 불필요
 }
 function refreshVendorSelects() {
-  document.getElementById('event-vendor-list').innerHTML = S.vendors.map(v=>`<option value="${v.name}">`).join('');
-  const tv = document.getElementById('task-vendor');
-  const tvVal = tv.value;
-  tv.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
-  tv.value = tvVal;
+  document.getElementById('popup-event-vendor-list').innerHTML = S.vendors.map(v=>`<option value="${v.name}">`).join('');
   const cv = document.getElementById('comm-vendor');
   const cvVal = cv.value;
   cv.innerHTML = '<option value="">공구사 선택</option>' + S.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
   cv.value = cvVal;
 }
 
-function addEvent() {
-  const vendorInput = document.getElementById('event-vendor').value.trim();
-  const startDate   = document.getElementById('event-startdate').value.trim();
-  const endDate     = document.getElementById('event-enddate').value.trim() || null;
-  const title       = document.getElementById('event-title').value.trim();
+function addEventFromPopup() {
+  const vendorInput = document.getElementById('popup-event-vendor').value.trim();
+  const title       = document.getElementById('popup-event-title').value.trim();
+  const endDate     = document.getElementById('popup-event-enddate').value.trim() || null;
+  const startDate   = _calPopupDate;
   if (!vendorInput) { toast('공구사를 입력해 주세요'); return; }
-  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작 날짜를 입력해 주세요 (예: 0307)'); return; }
-  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜를 확인해 주세요 (예: 0322)'); return; }
-  if (!title) { toast('일정 제목을 입력해 주세요'); return; }
+  if (!title) { toast('품목을 입력해 주세요'); return; }
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료 날짜를 확인해 주세요'); return; }
   let vendor = S.vendors.find(v => v.name === vendorInput);
   const isNew = !vendor;
   if (isNew) {
@@ -2651,13 +2688,11 @@ function addEvent() {
     refreshVendorSelects();
     renderVendorHistory();
   }
-  S.events.push({ id: genId('evt'), vendorId: vendor.id, startDate, endDate, title });
+  const evTitle = `${vendorInput} ${title}`;
+  S.events.push({ id: genId('evt'), vendorId: vendor.id, startDate, endDate, title: evTitle });
   save();
-  document.getElementById('event-vendor').value = '';
-  document.getElementById('event-startdate').value = '';
-  document.getElementById('event-enddate').value = '';
-  document.getElementById('event-title').value = '';
-  renderCalendar(); renderEventBars(); renderToday();
+  closeCalPopup();
+  renderCalendar(); renderEventBars(); renderToday(); renderGonggu();
   toast(isNew ? `"${vendorInput}" 공구사 등록 후 일정이 추가되었습니다` : '일정이 추가되었습니다');
 }
 
