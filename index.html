@@ -1853,18 +1853,21 @@ function renderVendorHistGrid() {
   const sorted = sortedVendors();
   if (!sorted.length) { grid.innerHTML = '<div class="empty-zone">등록된 공구사가 없어요</div>'; return; }
   grid.innerHTML = sorted.map(v => {
-    const lastComm = S.comms.filter(c=>c.vendorId===v.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
-    const evCount  = S.events.filter(e=>e.vendorId===v.id).length;
+    const evs        = S.events.filter(e=>e.vendorId===v.id);
+    const activeEvs  = evs.filter(e=>evIsActive(e));
+    const lastEv     = evs.sort((a,b)=>evStart(b).localeCompare(evStart(a)))[0];
     return `
     <div class="vendor-card ${selectedVendorHistId===v.id?'selected':''} ${v.paused?'paused':''}" onclick="selectVendorHist('${v.id}')">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <div style="margin-bottom:8px">
         <div class="vendor-name" style="font-size:13px;margin:0">${v.name}</div>
-        <span class="badge ${v.paused?'badge-gray':'badge-green'}" style="font-size:10px">${v.paused?'보류':'활성'}</span>
       </div>
-      <div style="font-size:12px;color:var(--text-light);margin-bottom:4px">
-        ${lastComm ? `최근 소통 ${fmtDate(lastComm.date)}` : '소통 없음'}
+      <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">
+        ${lastEv ? `최근 공구 ${fmtDate(evStart(lastEv))}` : '공구 없음'}
       </div>
-      <div style="font-size:12px;color:var(--text-mid)">공구 ${evCount}건</div>
+      ${activeEvs.length ? `
+      <div style="display:flex;flex-direction:column;gap:3px">
+        ${activeEvs.map(e=>`<div style="font-size:11px;color:var(--brown);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">· ${e.title}</div>`).join('')}
+      </div>` : `<div style="font-size:11px;color:var(--text-light)">진행 중 없음</div>`}
     </div>`;
   }).join('');
 }
@@ -1895,14 +1898,10 @@ function renderVendorHistDetail(vId) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:16px;font-weight:700;color:var(--text-dark)">${v.name}</span>
-        <span class="badge ${v.paused?'badge-gray':'badge-green'}">${v.paused?'보류':'활성'}</span>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <button onclick="openVendorEdit('${v.id}')" class="btn btn-sm btn-outline">편집</button>
-        ${v.paused
-          ? `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">활성화</button>
-             <button onclick="deleteVendorPermanent('${v.id}')" class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none">삭제</button>`
-          : `<button onclick="toggleVendorPaused('${v.id}')" class="btn btn-sm btn-outline">보류</button>`}
+        <button onclick="deleteVendorPermanent('${v.id}')" class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none">삭제</button>
         <button onclick="selectVendorHist('${vId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light);line-height:1">✕</button>
       </div>
     </div>
@@ -2012,12 +2011,6 @@ function closeEvPopup() {
   document.getElementById('ev-popup').style.display = 'none';
 }
 
-function toggleVendorPaused(id) {
-  const v = S.vendors.find(v=>v.id===id); if (!v) return;
-  v.paused = !v.paused;
-  save(); refreshVendorSelects(); renderVendorHistGrid(); renderVendorHistDetail(id); renderToday();
-  toast(v.paused ? `"${v.name}" 보류 처리됨` : `"${v.name}" 활성화됨`);
-}
 function deleteVendorPermanent(id) {
   const v = S.vendors.find(v=>v.id===id); if (!v) return;
   if (!confirm(`"${v.name}" 공구사와 모든 이력을 영구 삭제합니다. 계속할까요?`)) return;
