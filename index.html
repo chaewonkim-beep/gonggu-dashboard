@@ -456,7 +456,6 @@ textarea { resize: vertical; min-height: 60px; }
       <div class="section-title">📊 공구 현황</div>
       <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">공구 카드를 클릭하면 단계별 진행 현황과 상세 정보를 확인할 수 있어요</div>
       <div class="vendor-grid" id="gonggu-grid"></div>
-      <div id="gonggu-detail-panel" class="card" style="display:none;margin-top:20px;box-shadow:var(--shadow-md)"></div>
     </section>
 
     <!-- ④ 공구사 현황 (누적 이력) -->
@@ -555,6 +554,10 @@ textarea { resize: vertical; min-height: 60px; }
     <div id="ev-popup-sales"></div>
   </div>
 </div>
+
+<!-- 공구 상세 모달 -->
+<div id="gonggu-modal-overlay" onclick="closeGongguModal()" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(61,43,31,0.25)"></div>
+<div id="gonggu-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:201;background:#fff;border-radius:var(--radius);padding:24px;min-width:340px;max-width:680px;width:95%;box-shadow:0 8px 32px rgba(0,0,0,0.16);max-height:88vh;overflow-y:auto;"></div>
 
 <!-- 캘린더 날짜 팝업 -->
 <!-- 할 일 상세 팝업 -->
@@ -1069,6 +1072,7 @@ function getEvProg(evId) {
   if (S.evtProgress[evId].targetAge   == null) S.evtProgress[evId].targetAge   = '';
   if (S.evtProgress[evId].memo        == null) S.evtProgress[evId].memo        = '';
   if (!S.evtProgress[evId].evEvents)           S.evtProgress[evId].evEvents    = [];
+  if (!S.evtProgress[evId].dailySales)         S.evtProgress[evId].dailySales  = [];
   if (S.evtProgress[evId].checked.length < PROGRESS_STEPS.length)
     S.evtProgress[evId].checked = [...S.evtProgress[evId].checked, ...new Array(PROGRESS_STEPS.length - S.evtProgress[evId].checked.length).fill(false)];
   return S.evtProgress[evId];
@@ -1585,8 +1589,7 @@ function toggleGongguArchive(btn) {
 function archiveEvent(evId) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
   ev.archived = true;
-  selectedGongguId = null;
-  document.getElementById('gonggu-detail-panel').style.display = 'none';
+  closeGongguModal();
   save(); renderGonggu();
   toast(`"${ev.title}" 보관함으로 이동됨`);
 }
@@ -1597,13 +1600,14 @@ function unarchiveEvent(evId) {
   toast(`"${ev.title}" 복원됨`);
 }
 
+function closeGongguModal() {
+  document.getElementById('gonggu-modal-overlay').style.display = 'none';
+  document.getElementById('gonggu-modal').style.display = 'none';
+  selectedGongguId = null;
+  renderGonggu();
+}
 function selectGonggu(id) {
-  const panel = document.getElementById('gonggu-detail-panel');
-  if (selectedGongguId === id) {
-    selectedGongguId = null;
-    panel.style.display = 'none';
-    renderGonggu(); return;
-  }
+  if (selectedGongguId === id) { closeGongguModal(); return; }
   selectedGongguId = id;
   _gongguDetailPageIdx = 0;
   renderGonggu();
@@ -1649,7 +1653,30 @@ function buildEvDetailBodyHTML(evId, linkEditable) {
           </div>
         </div>
       </div>
-      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>`;
+      <div id="ev-sales-bar-${evId}">${renderSalesBarHtml(prog)}</div>
+      <div style="margin-top:18px;padding-top:16px;border-top:1px dashed var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--text-light);letter-spacing:0.3px;margin-bottom:10px">📋 데일리 판매 기록</div>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
+          <div class="form-group">
+            <label style="font-size:11px">날짜</label>
+            <input type="text" id="ev-daily-date-${evId}" value="${todayStr()}" data-di="1" style="width:120px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none">
+          </div>
+          <div class="form-group">
+            <label style="font-size:11px">판매건수 (건)</label>
+            <input type="number" id="ev-daily-count-${evId}" placeholder="0" min="0" style="width:90px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none">
+          </div>
+          <div class="form-group">
+            <label style="font-size:11px">매출 (원)</label>
+            <input type="number" id="ev-daily-sales-${evId}" placeholder="0" min="0" style="width:120px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none">
+          </div>
+          <div class="form-group">
+            <label style="font-size:11px">메모 (선택)</label>
+            <input type="text" id="ev-daily-memo-${evId}" placeholder="예: 오후 6시 기준" style="width:140px;font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--text-dark);outline:none">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addDailySalesRecord('${evId}')" style="align-self:flex-end;margin-bottom:1px">기록 추가</button>
+        </div>
+        <div id="ev-daily-list-${evId}">${renderDailySalesHtml(evId, prog.dailySales)}</div>
+      </div>`;
 
   } else if (idx === 1) {
     pageHtml = `
@@ -1747,8 +1774,8 @@ function buildEvDetailBodyHTML(evId, linkEditable) {
 
 function renderGongguDetail(evId) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
-  const panel = document.getElementById('gonggu-detail-panel');
-  panel.innerHTML = `
+  const modal = document.getElementById('gonggu-modal');
+  modal.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
         <div class="detail-panel-title" style="margin-bottom:4px">${ev.title}</div>
@@ -1763,12 +1790,12 @@ function renderGongguDetail(evId) {
           ? `<button onclick="unarchiveEvent('${evId}')" class="btn btn-sm btn-outline">복원</button>`
           : `<button onclick="archiveEvent('${evId}')" class="btn btn-sm btn-outline">보관함으로</button>`)
           : ''}
-        <button onclick="selectGonggu('${evId}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-light)">✕</button>
+        <button onclick="closeGongguModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-light);line-height:1;flex-shrink:0">✕</button>
       </div>
     </div>
     ${buildEvDetailBodyHTML(evId, true)}`;
-  panel.style.display = 'block';
-  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  document.getElementById('gonggu-modal-overlay').style.display = 'block';
+  modal.style.display = 'block';
 }
 
 let _openGongguDropdown = null;
@@ -1822,6 +1849,59 @@ function renderSalesBarHtml(prog) {
       ${settle ? `<span style="font-size:11px;color:var(--text-light)">정산 ${Math.round(settle).toLocaleString('ko-KR')}원</span>` : ''}
     </div>` : (settle ? `<div style="font-size:11px;color:var(--text-light)">정산 ${Math.round(settle).toLocaleString('ko-KR')}원</div>` : '')}
     ${!sales && count ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px">매출 미입력</div>` : ''}`;
+}
+
+function renderDailySalesHtml(evId, records) {
+  if (!records || !records.length)
+    return '<div style="font-size:12px;color:var(--text-light);padding:6px 0">아직 기록이 없어요. 날짜와 판매건수를 입력하고 기록을 시작해보세요!</div>';
+  const sorted = [...records].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  return `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${sorted.map(r => {
+        const count = parseInt(r.count) || 0;
+        const sales = parseFloat(r.sales) || 0;
+        return `
+        <div style="background:#fff;border:1px dashed var(--border);border-radius:var(--radius-sm);padding:10px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${(count||sales||r.memo)?'6':'0'}px">
+            <span style="font-size:11px;color:var(--text-light);font-weight:600;letter-spacing:0.2px">${r.date}</span>
+            <button onclick="removeDailySalesRecord('${evId}','${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:13px;padding:0;line-height:1;flex-shrink:0" title="삭제">✕</button>
+          </div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap">
+            ${count ? `<div><span style="font-size:11px;color:var(--text-light)">판매건수 </span><span style="font-size:14px;font-weight:700;color:var(--text-dark)">${count.toLocaleString('ko-KR')}<span style="font-size:11px;font-weight:500;color:var(--text-light);margin-left:1px">건</span></span></div>` : ''}
+            ${sales ? `<div><span style="font-size:11px;color:var(--text-light)">매출 </span><span style="font-size:14px;font-weight:700;color:#3A9A5C">${Math.round(sales).toLocaleString('ko-KR')}<span style="font-size:11px;font-weight:500;color:var(--text-light);margin-left:1px">원</span></span></div>` : ''}
+          </div>
+          ${r.memo ? `<div style="font-size:11px;color:var(--text-mid);margin-top:4px">${r.memo}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+function addDailySalesRecord(evId) {
+  const dateEl  = document.getElementById('ev-daily-date-'+evId);
+  const countEl = document.getElementById('ev-daily-count-'+evId);
+  const salesEl = document.getElementById('ev-daily-sales-'+evId);
+  const memoEl  = document.getElementById('ev-daily-memo-'+evId);
+  const date    = (dateEl?.value || '').trim();
+  const count   = parseInt(countEl?.value) || 0;
+  const sales   = parseFloat(salesEl?.value) || 0;
+  const memo    = (memoEl?.value || '').trim();
+  if (!date)           { toast('날짜를 입력해 주세요'); return; }
+  if (!count && !sales) { toast('판매건수 또는 매출을 입력해 주세요'); return; }
+  const prog = getEvProg(evId);
+  prog.dailySales.push({ id: genId('ds'), date, count, sales, memo });
+  save();
+  if (countEl) countEl.value = '';
+  if (salesEl) salesEl.value = '';
+  if (memoEl)  memoEl.value  = '';
+  const listEl = document.getElementById('ev-daily-list-'+evId);
+  if (listEl) listEl.innerHTML = renderDailySalesHtml(evId, prog.dailySales);
+  toast('판매 기록이 추가됐어요!');
+}
+function removeDailySalesRecord(evId, recordId) {
+  const prog = getEvProg(evId);
+  prog.dailySales = prog.dailySales.filter(r => r.id !== recordId);
+  save();
+  const listEl = document.getElementById('ev-daily-list-'+evId);
+  if (listEl) listEl.innerHTML = renderDailySalesHtml(evId, prog.dailySales);
 }
 
 function saveEvField(evId, field, value) {
