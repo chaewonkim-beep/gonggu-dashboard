@@ -800,6 +800,8 @@ const DEFAULT_TASKS = [
   { id: 't-009', vendorId: 'baobab',   eventId: 'evt-001', content: '기대평 이벤트 마감 처리',         done: false, archived: false, isDefault: true, createdAt: '2026-06-18', followUpFromCommId: null },
   // JNJ ─ 협의 완료 (팩토·비상 일정 확정)
   { id: 't-005', vendorId: 'jnj',      eventId: null,      content: '제이앤제이 신규 상품 협의',       done: true,  archived: false, isDefault: true, createdAt: '2026-06-08', followUpFromCommId: null },
+  // 바오밥 ─ 셈셈 연락
+  { id: 't-011', vendorId: 'baobab',   eventId: 'evt-001', content: '셈셈 연락',                      done: false, archived: false, isDefault: true, createdAt: '2026-06-23', dueDate: '2026-06-23', followUpFromCommId: null, assignee: null },
 ];
 const DEFAULT_COMMS = [
   // 2026-06-18 최신 업데이트
@@ -870,6 +872,14 @@ async function load() {
   migrateEvents();
   migrateProgress();
   migrateBaobab();
+  migrateAddSemSemTask();
+}
+function migrateAddSemSemTask() {
+  if (DONE_MIGRATIONS.has('add_semsem_task_v1')) return;
+  if (!S.tasks.find(t => t.id === 't-011')) {
+    S.tasks.unshift({ id: 't-011', vendorId: 'baobab', eventId: 'evt-001', content: '셈셈 연락', done: false, archived: false, isDefault: true, createdAt: '2026-06-23', dueDate: '2026-06-23', followUpFromCommId: null, assignee: null });
+  }
+  markMigrated('add_semsem_task_v1');
 }
 function migrateProgress() {
   S.vendors.forEach(v => {
