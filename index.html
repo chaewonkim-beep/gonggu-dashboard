@@ -2464,6 +2464,11 @@ function toggleTaskDone(id, checked) {
   t.done=checked;
   if (checked) { t.doneAt = todayStr(); t.archived = false; }
   else { t.doneAt = null; }
+  // 진행단계 연동 태스크인 경우 공구 진행단계도 함께 업데이트
+  if (t.eventId != null && t.stepIdx != null) {
+    const prog = getEvProg(t.eventId);
+    prog.checked[t.stepIdx] = checked;
+  }
   save(); renderTaskList(); renderToday();
   if (doneOpen) renderDoneList();
   if (selectedGongguId) renderGongguDetail(selectedGongguId);
