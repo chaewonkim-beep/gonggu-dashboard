@@ -548,6 +548,10 @@ textarea { resize: vertical; min-height: 60px; }
       <div class="section-title">💬 소통 기록</div>
       <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">공구사와 나눈 소통 내용을 기록하고 공구사별로 모아볼 수 있어요</div>
       <div class="comm-add-form">
+        <div style="margin-bottom:8px">
+          <textarea id="comm-raw-input" placeholder="📋 카카오톡·메일 대화를 붙여넣으면 AI가 요약해드려요 (선택)" style="width:100%;min-height:72px;resize:vertical;box-sizing:border-box;border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text-mid);background:var(--cream2);font-family:inherit" oninput="toggleAiBtn()"></textarea>
+          <button id="btn-ai-summarize" onclick="aiSummarizeComm()" style="display:none;margin-top:6px;width:100%;padding:8px;background:linear-gradient(135deg,#7B5C3E,#A07850);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.3px">✨ AI로 요약하기</button>
+        </div>
         <div style="display:flex;gap:8px;align-items:flex-start">
           <textarea id="comm-content" placeholder="💬 오늘의 소통 내용을 적어요" style="flex:1;min-height:60px;resize:vertical"></textarea>
           <button class="btn btn-primary" id="btn-add-comm" style="flex-shrink:0;align-self:flex-end">추가</button>
@@ -1782,26 +1786,9 @@ function buildEvDetailBodyHTML(evId, linkEditable) {
         ${prog.evEvents.length ? prog.evEvents.map(ee => evEventItemHtml(evId, ee)).join('')
         : '<div style="font-size:13px;color:var(--text-light)">등록된 이벤트 없음</div>'}
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="ev-ev-title-${evId}" placeholder="이벤트명" style="flex:2;min-width:140px">
-          <input type="text" id="ev-ev-content-${evId}" placeholder="내용 (선택)" style="flex:3;min-width:160px">
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:12px;color:var(--text-light);flex-shrink:0">참여기간</span>
-          <input type="text" id="ev-ev-start-${evId}" placeholder="YYYY-MM-DD" data-di="1" style="flex:1;min-width:120px">
-          <span style="font-size:12px;color:var(--text-light);flex-shrink:0">~</span>
-          <input type="text" id="ev-ev-end-${evId}" placeholder="YYYY-MM-DD" data-di="1" style="flex:1;min-width:120px">
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:12px;color:var(--text-light);flex-shrink:0">발표일</span>
-          <input type="text" id="ev-ev-announce-${evId}" placeholder="YYYY-MM-DD" data-di="1" style="flex:1;min-width:140px">
-          <span style="font-size:12px;color:var(--text-light);flex-shrink:0">📢 할 일 자동 생성</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="ev-ev-url-${evId}" placeholder="참여링크 (선택)" style="flex:1;min-width:160px">
-          <button class="btn btn-outline btn-sm" onclick="addEvEvent('${evId}')">추가</button>
-        </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="ev-ev-title-${evId}" placeholder="이벤트명 입력 후 추가" style="flex:1">
+        <button class="btn btn-outline btn-sm" onclick="addEvEvent('${evId}')">추가</button>
       </div>`;
 
   } else if (idx === 3) {
@@ -1870,9 +1857,12 @@ function renderGongguDetail(evId) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
   const modal = document.getElementById('gonggu-modal');
   modal.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
-      <div>
-        <div class="detail-panel-title" style="margin-bottom:4px">${ev.title}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <div class="detail-panel-title" style="margin:0">${ev.title}</div>
+          <button onclick="openGongguEdit('${evId}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-light);padding:2px 4px;flex-shrink:0" title="수정">✏️</button>
+        </div>
         <div style="font-size:13px;color:var(--text-mid);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span class="today-vendor-tag">${vendorName(ev.vendorId)}</span>
           <span>${evFmtDate(ev)}</span>
@@ -1887,9 +1877,60 @@ function renderGongguDetail(evId) {
         <button onclick="closeGongguModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-light);line-height:1;flex-shrink:0">✕</button>
       </div>
     </div>
+    <div id="gonggu-edit-panel-${evId}" style="display:none;background:var(--cream2);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <div class="form-group" style="flex:1;min-width:160px;margin:0">
+          <label style="font-size:11px">이벤트명</label>
+          <input type="text" id="gonggu-edit-title-${evId}" value="${ev.title}" style="width:100%">
+        </div>
+        <div class="form-group" style="min-width:120px;margin:0">
+          <label style="font-size:11px">공구사</label>
+          <select id="gonggu-edit-vendor-${evId}" style="width:100%">
+            ${S.vendors.map(v=>`<option value="${v.id}"${v.id===ev.vendorId?' selected':''}>${v.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="form-group" style="min-width:120px;margin:0">
+          <label style="font-size:11px">시작일</label>
+          <input type="text" id="gonggu-edit-start-${evId}" value="${evStart(ev)}" placeholder="YYYY-MM-DD" data-di="1">
+        </div>
+        <div class="form-group" style="min-width:120px;margin:0">
+          <label style="font-size:11px">종료일 (선택)</label>
+          <input type="text" id="gonggu-edit-end-${evId}" value="${evEnd(ev)||''}" placeholder="YYYY-MM-DD" data-di="1">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="saveGongguEdit('${evId}')">저장</button>
+        <button class="btn btn-outline btn-sm" onclick="closeGongguEdit('${evId}')">취소</button>
+      </div>
+    </div>
     ${buildEvDetailBodyHTML(evId, true)}`;
   document.getElementById('gonggu-modal-overlay').style.display = 'block';
   modal.style.display = 'block';
+}
+
+function openGongguEdit(evId) {
+  document.getElementById(`gonggu-edit-panel-${evId}`).style.display = 'block';
+}
+function closeGongguEdit(evId) {
+  document.getElementById(`gonggu-edit-panel-${evId}`).style.display = 'none';
+}
+function saveGongguEdit(evId) {
+  const ev = S.events.find(e => e.id === evId); if (!ev) return;
+  const title = document.getElementById(`gonggu-edit-title-${evId}`).value.trim();
+  const vendorId = document.getElementById(`gonggu-edit-vendor-${evId}`).value;
+  const startDate = document.getElementById(`gonggu-edit-start-${evId}`).value.trim();
+  const endDate = document.getElementById(`gonggu-edit-end-${evId}`).value.trim() || null;
+  if (!title) { toast('이벤트명을 입력해 주세요'); return; }
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { toast('시작일을 확인해 주세요'); return; }
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료일을 확인해 주세요'); return; }
+  if (endDate && endDate < startDate) { toast('종료일은 시작일보다 같거나 뒤여야 해요'); return; }
+  ev.title = title; ev.vendorId = vendorId; ev.startDate = startDate; ev.endDate = endDate;
+  save();
+  renderGonggu(); renderCalendar(); renderEventBars(); renderToday();
+  renderGongguDetail(evId);
+  toast('이벤트가 수정되었습니다');
 }
 
 let _openGongguDropdown = null;
@@ -2006,15 +2047,42 @@ function saveEvField(evId, field, value) {
 function evEventItemHtml(evId, ee) {
   const period = ee.startDate && ee.endDate ? `${ee.startDate} ~ ${ee.endDate}`
     : ee.startDate ? ee.startDate : ee.endDate ? `~ ${ee.endDate}` : '';
-  return `<div style="background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;display:flex;align-items:flex-start;gap:8px">
-    <div style="flex:1;min-width:0">
-      <div style="font-size:13px;font-weight:600;margin-bottom:3px">🎁 ${ee.title}</div>
-      ${ee.content ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:3px">${ee.content}</div>` : ''}
-      ${period ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:3px">📅 참여기간: ${period}</div>` : ''}
-      ${ee.announceDate ? `<div style="font-size:12px;color:var(--brown);font-weight:500;margin-bottom:3px">📢 발표일: ${ee.announceDate}</div>` : ''}
-      ${ee.url ? `<a href="${ee.url}" target="_blank" style="font-size:12px;color:var(--brown);text-decoration:none">🔗 참여하기</a>` : ''}
+  return `<div style="background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px">
+    <div style="display:flex;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">🎁 ${ee.title}</div>
+        ${ee.content ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:3px">${ee.content}</div>` : ''}
+        ${period ? `<div style="font-size:12px;color:var(--text-mid);margin-bottom:3px">📅 참여기간: ${period}</div>` : ''}
+        ${ee.announceDate ? `<div style="font-size:12px;color:var(--brown);font-weight:500;margin-bottom:3px">📢 발표일: ${ee.announceDate}</div>` : ''}
+        ${ee.url ? `<a href="${ee.url}" target="_blank" style="font-size:12px;color:var(--brown);text-decoration:none">🔗 참여하기</a>` : ''}
+      </div>
+      <div style="display:flex;gap:2px;flex-shrink:0">
+        <button onclick="openEvEventEdit('${ee.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:13px;padding:0 3px" title="수정">✏️</button>
+        <button onclick="removeEvEvent('${evId}','${ee.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;padding:0 3px">✕</button>
+      </div>
     </div>
-    <button onclick="removeEvEvent('${evId}','${ee.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;flex-shrink:0;padding:0 2px;margin-top:1px">✕</button>
+    <div id="ev-event-edit-${ee.id}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <input type="text" id="ev-ee-title-${ee.id}" value="${ee.title||''}" placeholder="이벤트명" style="width:100%;box-sizing:border-box;font-weight:600">
+        <input type="text" id="ev-ee-content-${ee.id}" value="${ee.content||''}" placeholder="내용 (선택)" style="width:100%;box-sizing:border-box">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:12px;color:var(--text-light);flex-shrink:0">참여기간</span>
+          <input type="text" id="ev-ee-start-${ee.id}" value="${ee.startDate||''}" placeholder="YYYY-MM-DD" data-di="1" style="flex:1;min-width:100px">
+          <span style="font-size:12px;color:var(--text-light)">~</span>
+          <input type="text" id="ev-ee-end-${ee.id}" value="${ee.endDate||''}" placeholder="YYYY-MM-DD" data-di="1" style="flex:1;min-width:100px">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:12px;color:var(--text-light);flex-shrink:0">발표일</span>
+          <input type="text" id="ev-ee-announce-${ee.id}" value="${ee.announceDate||''}" placeholder="YYYY-MM-DD" data-di="1" style="flex:1;min-width:120px">
+          <span style="font-size:12px;color:var(--text-light);flex-shrink:0">📢 할 일 자동 생성</span>
+        </div>
+        <input type="text" id="ev-ee-url-${ee.id}" value="${ee.url||''}" placeholder="참여링크 (선택)" style="width:100%;box-sizing:border-box">
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary btn-sm" onclick="saveEvEventEdit('${evId}','${ee.id}')">저장</button>
+          <button class="btn btn-outline btn-sm" onclick="closeEvEventEdit('${ee.id}')">닫기</button>
+        </div>
+      </div>
+    </div>
   </div>`;
 }
 function refreshEvEventsList(evId, prog) {
@@ -2025,30 +2093,45 @@ function refreshEvEventsList(evId, prog) {
     : '<div style="font-size:13px;color:var(--text-light)">등록된 이벤트 없음</div>';
 }
 function addEvEvent(evId) {
-  const title        = document.getElementById('ev-ev-title-'+evId).value.trim();
-  const content      = document.getElementById('ev-ev-content-'+evId).value.trim();
-  const startDate    = document.getElementById('ev-ev-start-'+evId).value.trim();
-  const endDate      = document.getElementById('ev-ev-end-'+evId).value.trim();
-  const announceDate = document.getElementById('ev-ev-announce-'+evId).value.trim();
-  const url          = document.getElementById('ev-ev-url-'+evId).value.trim();
+  const title = document.getElementById('ev-ev-title-'+evId).value.trim();
   if (!title) { toast('이벤트명을 입력해 주세요'); return; }
   const prog = getEvProg(evId);
-  prog.evEvents.push({ id: genId('ee'), title, content, startDate, endDate, announceDate, url });
-  if (announceDate) {
-    const ev = S.events.find(e => e.id === evId);
-    S.tasks.push({ id: genId('t'), vendorId: ev ? ev.vendorId : '', eventId: evId,
-      content: `[이벤트 발표] ${title}`, done: false, archived: false,
-      createdAt: todayStr(), dueDate: announceDate, assignee: '채원', followUpFromCommId: '' });
-  }
+  prog.evEvents.push({ id: genId('ee'), title, content: '', startDate: '', endDate: '', announceDate: '', url: '' });
   save();
   refreshEvEventsList(evId, prog);
   document.getElementById('ev-ev-title-'+evId).value = '';
-  document.getElementById('ev-ev-content-'+evId).value = '';
-  document.getElementById('ev-ev-start-'+evId).value = '';
-  document.getElementById('ev-ev-end-'+evId).value = '';
-  document.getElementById('ev-ev-announce-'+evId).value = '';
-  document.getElementById('ev-ev-url-'+evId).value = '';
-  toast(announceDate ? '이벤트가 추가됐습니다. 발표일 할 일도 생성됐어요!' : '이벤트가 추가됐습니다');
+  toast('이벤트가 추가됐습니다. ✏️ 버튼으로 세부내용을 추가하세요');
+}
+function openEvEventEdit(eeId) {
+  const el = document.getElementById(`ev-event-edit-${eeId}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function closeEvEventEdit(eeId) {
+  const el = document.getElementById(`ev-event-edit-${eeId}`);
+  if (el) el.style.display = 'none';
+}
+function saveEvEventEdit(evId, eeId) {
+  const prog = getEvProg(evId);
+  const ee = prog.evEvents.find(e => e.id === eeId); if (!ee) return;
+  const newTitle = document.getElementById(`ev-ee-title-${eeId}`).value.trim();
+  if (newTitle) ee.title = newTitle;
+  ee.content     = document.getElementById(`ev-ee-content-${eeId}`).value.trim();
+  ee.startDate   = document.getElementById(`ev-ee-start-${eeId}`).value.trim();
+  ee.endDate     = document.getElementById(`ev-ee-end-${eeId}`).value.trim();
+  ee.announceDate= document.getElementById(`ev-ee-announce-${eeId}`).value.trim();
+  ee.url         = document.getElementById(`ev-ee-url-${eeId}`).value.trim();
+  if (ee.announceDate) {
+    const alreadyHasTask = S.tasks.some(t => t.eventId === evId && t.content === `[이벤트 발표] ${ee.title}`);
+    if (!alreadyHasTask) {
+      const ev = S.events.find(e => e.id === evId);
+      S.tasks.push({ id: genId('t'), vendorId: ev ? ev.vendorId : '', eventId: evId,
+        content: `[이벤트 발표] ${ee.title}`, done: false, archived: false,
+        createdAt: todayStr(), dueDate: ee.announceDate, assignee: '채원', followUpFromCommId: '' });
+    }
+  }
+  save();
+  refreshEvEventsList(evId, prog);
+  toast(ee.announceDate ? '저장됐습니다. 발표일 할 일도 생성됐어요!' : '저장됐습니다');
 }
 function removeEvEvent(evId, eeId) {
   const prog = getEvProg(evId);
@@ -3197,6 +3280,100 @@ async function init() {
 }
 
 init();
+
+// ══════════════ 이벤트 탭 세부 입력 토글 ══════════════
+function toggleEvEventDetail(evId, val) {
+  const detail = document.getElementById(`ev-ev-detail-${evId}`);
+  if (!detail) return;
+  detail.style.display = val.trim() ? 'flex' : 'none';
+}
+
+// ══════════════ 공구현황 이벤트 추가 ══════════════
+function onGongguTitleInput(el) {
+  const detail = document.getElementById('gonggu-new-detail');
+  if (el.value.trim()) {
+    if (detail.style.display === 'none') {
+      detail.style.display = 'block';
+      document.getElementById('gonggu-new-vendor-list').innerHTML =
+        S.vendors.map(v => `<option value="${v.name}">`).join('');
+    }
+  } else {
+    detail.style.display = 'none';
+  }
+}
+
+function addGongguEvent() {
+  const title = document.getElementById('gonggu-new-title').value.trim();
+  const vendorInput = document.getElementById('gonggu-new-vendor').value.trim();
+  const startDate = document.getElementById('gonggu-new-start').value.trim() || todayStr();
+  const endDate = document.getElementById('gonggu-new-end').value.trim() || null;
+  if (!title) { toast('이벤트명을 입력해 주세요'); return; }
+  if (!vendorInput) { toast('공구사를 입력해 주세요'); return; }
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료일 형식을 확인해 주세요'); return; }
+  let vendor = S.vendors.find(v => v.name === vendorInput);
+  const isNew = !vendor;
+  if (isNew) {
+    vendor = { id: genId('v'), name: vendorInput, paused: false };
+    S.vendors.push(vendor);
+    refreshVendorSelects(); renderVendorHistory();
+  }
+  S.events.push({ id: genId('evt'), vendorId: vendor.id, startDate, endDate, title });
+  save();
+  document.getElementById('gonggu-new-title').value = '';
+  document.getElementById('gonggu-new-vendor').value = '';
+  document.getElementById('gonggu-new-start').value = '';
+  document.getElementById('gonggu-new-end').value = '';
+  document.getElementById('gonggu-new-detail').style.display = 'none';
+  renderCalendar(); renderEventBars(); renderToday(); renderGonggu();
+  toast(isNew ? `"${vendorInput}" 공구사 등록 후 이벤트가 추가되었습니다` : '이벤트가 추가되었습니다');
+}
+
+// ══════════════ Gemini AI 요약 ══════════════
+const GEMINI_API_KEY = ''; // GCP 콘솔에서 새 키 발급 후 여기에 입력
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+function toggleAiBtn() {
+  const raw = document.getElementById('comm-raw-input').value.trim();
+  document.getElementById('btn-ai-summarize').style.display = raw ? 'block' : 'none';
+}
+
+async function callGemini(prompt) {
+  const body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] });
+  const res = await fetch(GEMINI_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+    body
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `상태 코드 ${res.status}`);
+  }
+  return res.json();
+}
+
+async function aiSummarizeComm() {
+  const raw = document.getElementById('comm-raw-input').value.trim();
+  if (!raw) return;
+  const btn = document.getElementById('btn-ai-summarize');
+  btn.textContent = '⏳ 요약 중...';
+  btn.disabled = true;
+  try {
+    const prompt = `다음은 공구(공동구매) 관련 업무에서 공구사 담당자와 나눈 카카오톡 또는 이메일 대화입니다.\n아래 규칙에 따라 핵심 내용만 불릿 리스트로 정리해 주세요.\n\n규칙:\n- 각 항목은 "- "로 시작\n- 한 항목당 한 줄, 15자 이내로 간결하게\n- 결정된 내용, 전달 사항, 확인·요청 사항만 포함\n- 인사말, 감사 인사 등 불필요한 내용 제외\n- 번호 없이 불릿(-)만 사용\n- 4~6개 항목으로 정리\n\n---\n${raw}`;
+    const data = await callGemini(prompt);
+    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!summary) throw new Error('요약 결과를 받지 못했어요');
+    document.getElementById('comm-content').value = summary;
+    document.getElementById('comm-raw-input').value = '';
+    btn.style.display = 'none';
+    toast('AI 요약 완료! 내용을 확인 후 추가해 주세요');
+  } catch (e) {
+    toast('요약 실패: ' + e.message);
+    console.error('[Gemini 오류]', e);
+  } finally {
+    btn.textContent = '✨ AI로 요약하기';
+    btn.disabled = false;
+  }
+}
 </script>
 </body>
 </html>
