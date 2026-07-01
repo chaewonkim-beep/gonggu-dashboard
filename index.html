@@ -6,6 +6,7 @@
 <title>달콤수학 공구 관리 대시보드</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -177,6 +178,25 @@ textarea { resize: vertical; min-height: 60px; }
 .cal-day.range-fill:hover { background: #FDDBB0; }
 .cal-day.range-fill.range-start { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
 .cal-day.range-fill.range-end   { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+/* ─── 브리핑 탭 통합 캘린더 (일정+할일) ─── */
+.brief-cal-week { display:flex; margin-bottom:2px }
+.brief-cal-dow { flex:1; text-align:center; font-size:11px; font-weight:600; color:var(--text-light); padding:4px 0 }
+.brief-cal-day { flex:1; min-width:0; min-height:56px; padding:3px 2px; border-radius:6px; font-size:11px; color:var(--text-dark); box-sizing:border-box }
+.brief-cal-day:hover { background: var(--cream2) }
+.brief-cal-day.other-month { color: var(--text-light); opacity:0.5 }
+.brief-cal-day.today .brief-cal-daynum { background: var(--yellow); color: var(--brown); font-weight:700; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px }
+.brief-cal-day.sunday .brief-cal-daynum { color: var(--red) }
+.brief-cal-day.saturday .brief-cal-daynum { color: #5080C0 }
+.brief-cal-daynum { font-size:11px; display:block; text-align:center; margin-bottom:2px }
+.brief-cal-item { font-size:9px; line-height:1.3; padding:1px 3px; border-radius:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; color:#fff; cursor:default }
+.brief-cal-item.event { background: var(--orange) }
+.brief-cal-item.task  { background: var(--brown) }
+.brief-cal-item.more  { background:none; color:var(--text-light); text-align:center }
+.brief-legend { display:flex; gap:14px; margin-top:8px; font-size:11px; color:var(--text-light); align-items:center }
+.brief-legend .brief-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px }
+.brief-dot-event { background: var(--orange) }
+.brief-dot-task  { background: var(--brown) }
 
 /* ─── 커스텀 데이트피커 ─── */
 #dp-overlay { display:none; position:fixed; inset:0; z-index:400; }
@@ -441,6 +461,14 @@ textarea { resize: vertical; min-height: 60px; }
       <div id="today-date-header"></div>
       <div id="today-gonggu-bar"></div>
       <div id="today-gonggu-dropdown" style="display:none;margin-bottom:20px"></div>
+      <div class="calendar-card" style="margin-bottom:20px">
+        <div id="brief-cal-label" class="cal-month" style="margin-bottom:8px"></div>
+        <div class="cal-grid" id="brief-cal-grid"></div>
+        <div class="brief-legend">
+          <span><span class="brief-dot brief-dot-event"></span>공구 일정</span>
+          <span><span class="brief-dot brief-dot-task"></span>할 일</span>
+        </div>
+      </div>
       <div style="margin:24px 0 8px">
         <div style="height:1px;background:var(--border)"></div>
         <div style="font-size:14px;color:var(--text-mid);margin-top:14px;margin-bottom:18px;text-align:center;font-weight:500">할 일을 하나씩 해치워봐요! 😤</div>
@@ -468,6 +496,12 @@ textarea { resize: vertical; min-height: 60px; }
     <section id="section-schedule" class="section">
       <div class="section-title">📅 공구 일정</div>
       <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">캘린더 날짜를 클릭해서 새로운 일정을 입력하세요</div>
+      <div id="gcal-sync-bar" style="display:flex;align-items:center;gap:8px;margin:-4px 0 16px;font-size:12px;flex-wrap:wrap">
+        <span id="gcal-sync-status" style="color:var(--text-light)"></span>
+        <button id="btn-gcal-connect" class="btn btn-outline btn-sm" onclick="connectGoogleCalendar()">🔗 구글 캘린더 연동</button>
+        <button id="btn-gcal-sync-now" class="btn btn-outline btn-sm" style="display:none" onclick="pullGoogleEvents(false)">🔄 지금 동기화</button>
+        <button id="btn-gcal-disconnect" class="btn btn-outline btn-sm" style="display:none" onclick="disconnectGoogleCalendar()">연동 해제</button>
+      </div>
       <div class="schedule-layout" style="align-items:start">
         <div class="calendar-card">
           <div class="cal-header">
@@ -730,6 +764,15 @@ const SB_URL = 'https://tvokoweialgamsyzwqyy.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2b2tvd2VpYWxnYW1zeXp3cXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MzMxMTUsImV4cCI6MjA5NzUwOTExNX0.ReMSkrfZdWU1GX9yMVHwdvx11426kaGgXtt5abqodw0';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// ══════════════ Google Calendar 연동 (OAuth Client ID — 비밀값 아님) ══════════════
+const GOOGLE_CLIENT_ID = '233144145320-eciubbn9vvtqlpi87182iv7med8cupiq.apps.googleusercontent.com'; // 비밀값 아님, Google Cloud Console에서 발급
+const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
+const GOOGLE_CALENDAR_NAME = '공구 일정'; // 공구 대시보드 전용 보조 캘린더 (새로 생성, 기존 회사 캘린더와 분리)
+const GOOGLE_SYNC_MIN_DATE = '2026-07-01T00:00:00Z'; // 이 날짜 이전 이벤트는 풀(Pull) 대상에서 제외 (오래된 캘린더 이력 유입 방지)
+let gcalTokenClient = null;   // GIS 토큰 클라이언트 인스턴스
+let gcalAccessToken = null;   // 메모리에만 보관 (localStorage/Supabase에 절대 저장하지 않음)
+let gcalTokenExpiresAt = 0;   // ms epoch
+
 // ── 커스텀 데이트피커 ──
 let _dpTarget = null, _dpYear = 0, _dpMonth = 0;
 const DAYS_KO = ['일','월','화','수','목','금','토'];
@@ -825,6 +868,7 @@ const DEFAULT_EVENTS = [
   // ─ 일프로 연산 (범위) ─
   { id: 'evt-012', vendorId: 'ilpro',    startDate: '2026-09-29', endDate: '2026-10-05', title: '일프로 연산 공구' },
 ];
+const DEFAULT_GOOGLE_SYNC = { calendarId: null, syncToken: null };
 const DEFAULT_TASKS = [
   // 칠진사 ─ 미팅 완료, 콘텐츠팀 전달 남음
   { id: 't-001', vendorId: 'chilgeun', eventId: 'evt-002', content: '칠진사 미팅 준비',              done: true,  archived: false, isDefault: true, createdAt: '2026-06-10', followUpFromCommId: 'c-002' },
@@ -893,7 +937,7 @@ const DEFAULT_PROGRESS = {
 };
 
 // ══════════════ 상태 ══════════════
-const S = { vendors:[], events:[], tasks:[], comms:[], progress:{}, evtProgress:{}, insta:[] };
+const S = { vendors:[], events:[], tasks:[], comms:[], progress:{}, evtProgress:{}, insta:[], googleSync:{} };
 const DONE_MIGRATIONS = new Set(JSON.parse(localStorage.getItem('gg2_migrations') || '[]'));
 function markMigrated(key) { DONE_MIGRATIONS.add(key); localStorage.setItem('gg2_migrations', JSON.stringify([...DONE_MIGRATIONS])); }
 
@@ -909,6 +953,7 @@ async function load() {
     S.progress    = map['progress']     || JSON.parse(localStorage.getItem('gg2_progress'))     || JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
     S.evtProgress = map['evt_progress'] || JSON.parse(localStorage.getItem('gg2_evt_progress')) || JSON.parse(JSON.stringify(DEFAULT_EVENT_PROGRESS));
     S.insta       = map['insta']        || JSON.parse(localStorage.getItem('gg2_insta'))        || [];
+    S.googleSync  = map['google_sync']  || JSON.parse(localStorage.getItem('gg2_google_sync'))  || JSON.parse(JSON.stringify(DEFAULT_GOOGLE_SYNC));
   } catch(e) {
     console.warn('Supabase 로드 실패, 로컬 데이터 사용:', e);
     S.vendors     = JSON.parse(localStorage.getItem('gg2_vendors'))      || JSON.parse(JSON.stringify(DEFAULT_VENDORS));
@@ -918,12 +963,14 @@ async function load() {
     S.progress    = JSON.parse(localStorage.getItem('gg2_progress'))     || JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
     S.evtProgress = JSON.parse(localStorage.getItem('gg2_evt_progress')) || JSON.parse(JSON.stringify(DEFAULT_EVENT_PROGRESS));
     S.insta       = JSON.parse(localStorage.getItem('gg2_insta'))        || [];
+    S.googleSync  = JSON.parse(localStorage.getItem('gg2_google_sync'))  || JSON.parse(JSON.stringify(DEFAULT_GOOGLE_SYNC));
   }
   migrateVendors();
   migrateEvents();
   migrateProgress();
   migrateBaobab();
   migrateAddSemSemTask();
+  migrateGoogleSync();
 }
 function migrateAddSemSemTask() {
   if (DONE_MIGRATIONS.has('add_semsem_task_v1')) return;
@@ -1009,6 +1056,14 @@ function migrateEvents() {
     S.comms.forEach(c => { if (c.eventId === endId) c.eventId = startId; });
   });
 }
+function migrateGoogleSync() {
+  // 구글 캘린더 연동용 필드 기본값 부여 (googleEventId: 매핑된 구글 이벤트 id, updatedAt: 최종 수정 시각)
+  S.events = S.events.map(e => ({
+    ...e,
+    googleEventId: e.googleEventId ?? null,
+    updatedAt:     e.updatedAt ?? null,
+  }));
+}
 function save() {
   // 로컬 캐시 즉시 저장
   localStorage.setItem('gg2_vendors',      JSON.stringify(S.vendors));
@@ -1018,6 +1073,7 @@ function save() {
   localStorage.setItem('gg2_progress',     JSON.stringify(S.progress));
   localStorage.setItem('gg2_evt_progress', JSON.stringify(S.evtProgress));
   localStorage.setItem('gg2_insta',        JSON.stringify(S.insta));
+  localStorage.setItem('gg2_google_sync',  JSON.stringify(S.googleSync));
   // Supabase 백그라운드 저장
   sb.from('gg_store').upsert([
     { key: 'vendors',      value: S.vendors },
@@ -1027,7 +1083,369 @@ function save() {
     { key: 'progress',     value: S.progress },
     { key: 'evt_progress', value: S.evtProgress },
     { key: 'insta',        value: S.insta },
+    { key: 'google_sync',  value: S.googleSync },
   ]).then(({ error }) => { if (error) console.error('Supabase 저장 오류:', error); });
+}
+
+// ══════════════ Google Calendar 양방향 동기화 ══════════════
+
+function initGoogleAuth() {
+  if (!GOOGLE_CLIENT_ID || !window.google?.accounts?.oauth2) return;
+  gcalTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_CALENDAR_SCOPE,
+    callback: () => {}, // requestAccessToken 호출 시점마다 개별 콜백으로 덮어씀
+  });
+}
+
+function ensureGoogleToken(interactive) {
+  return new Promise((resolve, reject) => {
+    if (!gcalTokenClient) return reject(new Error('구글 인증이 초기화되지 않았어요'));
+    if (gcalAccessToken && Date.now() < gcalTokenExpiresAt) return resolve(gcalAccessToken);
+    gcalTokenClient.callback = (resp) => {
+      if (resp.error) return reject(resp);
+      gcalAccessToken = resp.access_token;
+      gcalTokenExpiresAt = Date.now() + (Number(resp.expires_in || 3500) * 1000);
+      resolve(gcalAccessToken);
+    };
+    gcalTokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+  });
+}
+
+async function gcalFetch(url, options = {}, _retried = false) {
+  await ensureGoogleToken(false);
+  const res = await fetch(url, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${gcalAccessToken}`, ...(options.headers || {}) },
+  });
+  if (res.status === 401 && !_retried) {
+    gcalAccessToken = null;
+    try { await ensureGoogleToken(false); } catch (e) { handleGoogleAuthFailure(); throw e; }
+    return gcalFetch(url, options, true);
+  }
+  if (res.status === 401) { handleGoogleAuthFailure(); }
+  return res;
+}
+
+function handleGoogleAuthFailure() {
+  gcalAccessToken = null;
+  const status = document.getElementById('gcal-sync-status');
+  if (status) status.textContent = '⚠ 구글 캘린더 인증이 만료됐어요 — 다시 연결해 주세요';
+  const btn = document.getElementById('btn-gcal-connect');
+  if (btn) btn.style.display = 'inline-flex';
+}
+
+let _gcalConnecting = false;
+async function connectGoogleCalendar() {
+  if (!GOOGLE_CLIENT_ID) { toast('구글 캘린더 연동이 아직 설정되지 않았어요'); return; }
+  if (_gcalConnecting) return; // 중복 클릭/중복 실행으로 인한 이중 Push 방지
+  _gcalConnecting = true;
+  const btn = document.getElementById('btn-gcal-connect');
+  if (btn) btn.disabled = true;
+  try {
+    await ensureGoogleToken(true);
+    if (!S.googleSync.calendarId) {
+      const listRes = await gcalFetch('https://www.googleapis.com/calendar/v3/users/me/calendarList');
+      const list = await listRes.json();
+      const found = (list.items || []).find(c => c.summary === GOOGLE_CALENDAR_NAME);
+      if (found) {
+        S.googleSync.calendarId = found.id;
+      } else {
+        const createRes = await gcalFetch('https://www.googleapis.com/calendar/v3/calendars', {
+          method: 'POST',
+          body: JSON.stringify({ summary: GOOGLE_CALENDAR_NAME, timeZone: 'Asia/Seoul' }),
+        });
+        const created = await createRes.json();
+        S.googleSync.calendarId = created.id;
+      }
+      save();
+      // 최초 연동: 로컬의 미보관 이벤트를 전부 구글로 Push (할 일은 동기화하지 않음)
+      for (const ev of S.events.filter(e => !e.archived)) {
+        await pushEventCreate(ev);
+      }
+    }
+    await pullGoogleEvents(true);
+    renderGcalSyncBar();
+    toast('구글 캘린더 연동 완료');
+  } catch (e) {
+    console.warn('구글 캘린더 연동 실패', e);
+    toast('구글 캘린더 연동에 실패했어요');
+  } finally {
+    _gcalConnecting = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+function disconnectGoogleCalendar() {
+  S.googleSync = JSON.parse(JSON.stringify(DEFAULT_GOOGLE_SYNC));
+  save();
+  renderGcalSyncBar();
+  toast('구글 캘린더 연동을 해제했어요');
+}
+
+function renderGcalSyncBar() {
+  const status = document.getElementById('gcal-sync-status');
+  const btnConnect = document.getElementById('btn-gcal-connect');
+  const btnSyncNow = document.getElementById('btn-gcal-sync-now');
+  const btnDisconnect = document.getElementById('btn-gcal-disconnect');
+  if (!status) return;
+  const connected = !!S.googleSync.calendarId;
+  status.textContent = connected ? '✅ 구글 캘린더 연동됨 (앱을 열 때마다 동기화돼요)' : '';
+  btnConnect.style.display = connected ? 'none' : 'inline-flex';
+  btnSyncNow.style.display = connected ? 'inline-flex' : 'none';
+  btnDisconnect.style.display = connected ? 'inline-flex' : 'none';
+}
+
+function toGcalDate(startDate, endDate) {
+  // Google Calendar all-day 이벤트는 end가 exclusive(그 날짜는 미포함)라 inclusive 종료일에 +1일 처리
+  const base = endDate || startDate;
+  const d = new Date(base + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  const endExclusive = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { start: { date: startDate }, end: { date: endExclusive } };
+}
+function addDaysStr(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+async function pushEventCreate(ev) {
+  if (!S.googleSync.calendarId) return;
+  try {
+    const body = { summary: ev.title, ...toGcalDate(ev.startDate, ev.endDate),
+                   extendedProperties: { private: { localEventId: ev.id } } };
+    const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events`, { method: 'POST', body: JSON.stringify(body) });
+    const data = await res.json();
+    ev.googleEventId = data.id;
+    save();
+  } catch (e) { console.warn('Google Calendar push 실패(생성)', e); }
+}
+async function pushEventUpdate(ev) {
+  if (!S.googleSync.calendarId) return;
+  if (!ev.googleEventId) return pushEventCreate(ev);
+  try {
+    const body = { summary: ev.title, ...toGcalDate(ev.startDate, ev.endDate) };
+    await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events/${ev.googleEventId}`, { method: 'PATCH', body: JSON.stringify(body) });
+  } catch (e) { console.warn('Google Calendar push 실패(수정)', e); }
+}
+async function pushEventDelete(googleEventId) {
+  if (!S.googleSync.calendarId || !googleEventId) return;
+  try {
+    await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events/${googleEventId}`, { method: 'DELETE' });
+  } catch (e) { console.warn('Google Calendar push 실패(삭제)', e); }
+}
+
+async function pullGoogleEvents(fullResync) {
+  if (!S.googleSync.calendarId) return;
+  try { await ensureGoogleToken(false); } catch (e) { return; } // 조용히 실패 (미연동/미로그인)
+  let pageToken;
+  let syncToken = fullResync ? null : S.googleSync.syncToken;
+  let touched = false;
+  try {
+    do {
+      const params = new URLSearchParams({ singleEvents: 'true', maxResults: '250' });
+      if (syncToken) params.set('syncToken', syncToken); else params.set('timeMin', GOOGLE_SYNC_MIN_DATE);
+      if (pageToken) params.set('pageToken', pageToken);
+      const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events?${params}`);
+      if (res.status === 410) { // syncToken 만료 → 전체 재동기화로 폴백
+        S.googleSync.syncToken = null; save();
+        return pullGoogleEvents(true);
+      }
+      const data = await res.json();
+      for (const gev of data.items || []) {
+        const localId = gev.extendedProperties?.private?.localEventId;
+        let local = (localId && S.events.find(e => e.id === localId)) || S.events.find(e => e.googleEventId === gev.id);
+        if (gev.status === 'cancelled') {
+          if (local) { S.events = S.events.filter(e => e !== local); touched = true; }
+          continue;
+        }
+        const remoteUpdated = new Date(gev.updated).getTime();
+        if (local) {
+          const localUpdated = local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+          if (remoteUpdated > localUpdated) {
+            local.title = gev.summary || local.title;
+            local.startDate = gev.start?.date || local.startDate;
+            local.endDate = gev.end?.date ? addDaysStr(gev.end.date, -1) : null;
+            local.googleEventId = gev.id;
+            local.updatedAt = gev.updated;
+            touched = true;
+          }
+        }
+        // 마커(localEventId)가 없는, 캘린더에서 직접 생긴 새 이벤트는 채택하지 않음
+        // ("달콤교육_공구"처럼 공구 전용이 아닌 캘린더를 쓰는 경우 무관한 일정이 대시보드로 유입되는 것을 방지)
+      }
+      pageToken = data.nextPageToken;
+      if (data.nextSyncToken) S.googleSync.syncToken = data.nextSyncToken;
+    } while (pageToken);
+    save();
+    if (touched) { renderCalendar(); renderEventBars(); renderToday(); renderGonggu(); }
+  } catch (e) { console.warn('Google Calendar pull 실패', e); }
+}
+
+// 일회성 복구용: 우리 마커(localEventId)는 있지만 현재 로컬 이벤트 목록에 더 이상 없는
+// (즉 예전 오염 사고로 잘못 Push된) 캘린더 이벤트를 찾아 삭제한다. 브라우저 콘솔에서 직접 호출.
+async function cleanupGoogleCalendarJunk() {
+  if (!S.googleSync.calendarId) { console.log('구글 캘린더 미연동 상태'); return; }
+  await ensureGoogleToken(false);
+  const validIds = new Set(S.events.map(e => e.id));
+  let pageToken, checked = 0, deleted = 0, failed = 0;
+  try {
+    do {
+      const params = new URLSearchParams({ singleEvents: 'true', maxResults: '250', timeMin: '2026-01-01T00:00:00Z' });
+      if (pageToken) params.set('pageToken', pageToken);
+      const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events?${params}`);
+      const data = await res.json();
+      for (const gev of data.items || []) {
+        if (gev.status === 'cancelled') continue;
+        checked++;
+        const localId = gev.extendedProperties?.private?.localEventId;
+        if (localId && !validIds.has(localId)) {
+          try {
+            const delRes = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events/${gev.id}`, { method: 'DELETE' });
+            if (delRes.ok || delRes.status === 410) deleted++; else failed++;
+          } catch (e) {
+            failed++;
+            console.warn('삭제 실패, 계속 진행:', gev.id, e);
+          }
+        }
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+  } catch (e) {
+    console.warn('정리 중단(중간까지는 반영됨), 다시 실행하면 이어서 처리됩니다:', e);
+  }
+  console.log(`검사 ${checked}건 중 삭제 ${deleted}건, 실패 ${failed}건`);
+  toast(`구글 캘린더 정리: ${deleted}건 삭제${failed ? `, ${failed}건 실패(다시 실행하면 이어서 처리)` : ''}`);
+}
+
+// 일회성 진단용: 대시보드가 추적 중인 이벤트(googleEventId 있음)와 같은 제목·겹치는 날짜인데
+// 마커가 없는(=우리가 만들지 않은, 사용자가 원래 갖고 있던) 중복 이벤트를 찾아서 로그로만 보여준다.
+// 삭제는 하지 않음 — 결과를 보고 어떤 걸 지울지 확인한 뒤 removeUnsyncedDuplicates()를 별도 호출.
+async function listDuplicateGcalEvents() {
+  if (!S.googleSync.calendarId) { console.log('구글 캘린더 미연동 상태'); return []; }
+  await ensureGoogleToken(false);
+  let pageToken; const all = [];
+  do {
+    const params = new URLSearchParams({ singleEvents: 'true', maxResults: '250', timeMin: '2026-01-01T00:00:00Z' });
+    if (pageToken) params.set('pageToken', pageToken);
+    const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events?${params}`);
+    const data = await res.json();
+    all.push(...(data.items || []).filter(e => e.status !== 'cancelled'));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  const ours = all.filter(e => e.extendedProperties?.private?.localEventId);
+  const others = all.filter(e => !e.extendedProperties?.private?.localEventId);
+  const duplicates = [];
+  for (const o of ours) {
+    const match = others.find(x => x.summary === o.summary && x.start?.date === o.start?.date);
+    if (match) duplicates.push({ title: o.summary, oursId: o.id, originalId: match.id, date: o.start?.date });
+  }
+  console.log(`총 ${duplicates.length}건의 중복 발견:`);
+  duplicates.forEach(d => console.log(`- "${d.title}" (${d.date}) — 원래 있던 것: ${d.originalId} / 우리가 만든 것: ${d.oursId}`));
+  window.__gcalDuplicates = duplicates; // removeUnsyncedDuplicates()에서 재사용
+  return duplicates;
+}
+
+// listDuplicateGcalEvents() 실행 후 확인 차 호출 — "원래 있던 것"(마커 없는 쪽)만 삭제하고
+// 대시보드와 연결된 우리 쪽 이벤트는 그대로 남긴다.
+async function removeUnsyncedDuplicates() {
+  const dups = window.__gcalDuplicates;
+  if (!dups || !dups.length) { console.log('먼저 listDuplicateGcalEvents()를 실행해 주세요'); return; }
+  let deleted = 0, failed = 0;
+  for (const d of dups) {
+    try {
+      const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events/${d.originalId}`, { method: 'DELETE' });
+      if (res.ok || res.status === 410) deleted++; else failed++;
+    } catch (e) { failed++; console.warn('삭제 실패:', d, e); }
+  }
+  console.log(`중복 제거: ${deleted}건 삭제, ${failed}건 실패`);
+  toast(`중복 이벤트 ${deleted}건 정리 완료`);
+}
+
+// 일회성 복구용: 연동 버튼 중복 실행 등으로 같은 로컬 항목(localEventId)이 캘린더에
+// 2건 이상 Push된 경우, 현재 대시보드가 실제로 연결(googleEventId)하고 있는 것만 남기고 나머지를 지운다.
+async function removeDuplicateTrackedEvents() {
+  if (!S.googleSync.calendarId) { console.log('구글 캘린더 미연동 상태'); return; }
+  await ensureGoogleToken(false);
+  let pageToken; const all = [];
+  do {
+    const params = new URLSearchParams({ singleEvents: 'true', maxResults: '250', timeMin: '2026-01-01T00:00:00Z' });
+    if (pageToken) params.set('pageToken', pageToken);
+    const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events?${params}`);
+    const data = await res.json();
+    all.push(...(data.items || []).filter(e => e.status !== 'cancelled'));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  const byLocalId = {};
+  all.forEach(gev => {
+    const lid = gev.extendedProperties?.private?.localEventId;
+    if (!lid) return;
+    (byLocalId[lid] ||= []).push(gev);
+  });
+  const currentLinks = new Set([...S.events, ...S.tasks].map(x => x.googleEventId).filter(Boolean));
+
+  let deleted = 0, failed = 0;
+  for (const group of Object.values(byLocalId)) {
+    if (group.length < 2) continue;
+    for (const gev of group) {
+      if (currentLinks.has(gev.id)) continue; // 대시보드가 지금 실제로 연결 중인 것은 보존
+      try {
+        const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events/${gev.id}`, { method: 'DELETE' });
+        if (res.ok || res.status === 410) deleted++; else failed++;
+      } catch (e) { failed++; console.warn('삭제 실패:', gev.id, e); }
+    }
+  }
+  console.log(`중복(같은 항목 2건 이상) 정리: ${deleted}건 삭제, ${failed}건 실패`);
+  toast(`중복 정리 완료: ${deleted}건 삭제`);
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// 아직 캘린더에 안 올라간(googleEventId 없는) 이벤트를 요청 사이 텀을 두고 안전하게 재시도 Push.
+async function pushAllUnsynced() {
+  if (!S.googleSync.calendarId) { console.log('구글 캘린더 미연동 상태'); return; }
+  const evs = S.events.filter(e => !e.archived && !e.googleEventId);
+  console.log(`Push 대상: 이벤트 ${evs.length}건`);
+  for (const ev of evs) { await pushEventCreate(ev); await sleep(400); }
+  console.log('재시도 Push 완료');
+  toast(`재시도 완료: 이벤트 ${evs.length}건 Push`);
+}
+
+// 이벤트에 지정했던 커스텀 색상을 지우고 캘린더 기본 색으로 되돌린다.
+async function resetEventColors() {
+  if (!S.googleSync.calendarId) { console.log('구글 캘린더 미연동 상태'); return; }
+  const evs = S.events.filter(e => e.googleEventId);
+  let done = 0, failed = 0;
+  for (const ev of evs) {
+    try {
+      await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events/${ev.googleEventId}`, { method: 'PATCH', body: JSON.stringify({ colorId: null }) });
+      done++;
+    } catch (e) { failed++; console.warn(e); }
+    await sleep(300);
+  }
+  console.log(`색상 초기화: ${done}건 완료, ${failed}건 실패`);
+  toast(`기본 색상으로 초기화 완료: ${done}건`);
+}
+
+// 일회성: 이전에 캘린더로 Push됐던 할 일들을 캘린더에서 삭제하고 로컬 연결(googleEventId)도 끊는다.
+// (할 일 동기화 기능 자체를 껐으므로, 이미 올라간 잔여 항목을 정리)
+async function disableTaskCalendarSync() {
+  if (!S.googleSync.calendarId) { console.log('구글 캘린더 미연동 상태'); return; }
+  const tasks = S.tasks.filter(t => t.googleEventId);
+  let done = 0, failed = 0;
+  for (const t of tasks) {
+    try {
+      await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events/${t.googleEventId}`, { method: 'DELETE' });
+      t.googleEventId = null;
+      done++;
+    } catch (e) { failed++; console.warn(e); }
+    await sleep(300);
+  }
+  save();
+  console.log(`할 일 캘린더 연동 해제: ${done}건 삭제, ${failed}건 실패`);
+  toast(`할 일 ${done}건을 캘린더에서 제거했어요`);
 }
 
 // ══════════════ 유틸 ══════════════
@@ -1292,10 +1710,64 @@ function renderToday() {
   const todayTasks = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate <= ts);
   const weekTasks  = S.tasks.filter(t => !t.done && !t.archived && t.dueDate && t.dueDate > ts).sort((a,b) => a.dueDate.localeCompare(b.dueDate));
   renderTodayDateHeader();
+  renderBriefCalendar();
   renderZone('zone-today-list', todayTasks, false);
   renderZone('zone-week-list',  weekTasks, true);
   renderMonthlySales();
   renderTodayGongguBar();
+}
+
+function renderBriefCalendar() {
+  const pad = n => String(n).padStart(2,'0');
+  const year = TODAY.getFullYear(), month = TODAY.getMonth();
+  document.getElementById('brief-cal-label').textContent = `${year}년 ${month+1}월`;
+  const dows  = ['일','월','화','수','목','금','토'];
+  const first = new Date(year, month, 1);
+  const last  = new Date(year, month+1, 0);
+
+  // 날짜별 이벤트/할일 항목 맵
+  const dayItems = {}; // ds -> [{type:'event'|'task', title}]
+  S.events.filter(e => !e.archived).forEach(ev => {
+    const s = evStart(ev), en = evEnd(ev) || evStart(ev);
+    let cur = new Date(s + 'T00:00:00'), lastD = new Date(en + 'T00:00:00');
+    while (cur <= lastD) {
+      const ds = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`;
+      (dayItems[ds] ||= []).push({ type: 'event', title: ev.title });
+      cur.setDate(cur.getDate()+1);
+    }
+  });
+  S.tasks.filter(t => !t.done && !t.archived && t.dueDate).forEach(t => {
+    (dayItems[t.dueDate] ||= []).push({ type: 'task', title: t.content });
+  });
+
+  let html = `<div class="brief-cal-week">${dows.map(d=>`<div class="brief-cal-dow">${d}</div>`).join('')}</div>`;
+  const cells = [];
+  for (let i=0; i<first.getDay(); i++) cells.push(null);
+  for (let d=1; d<=last.getDate(); d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const MAX_ITEMS = 2;
+  for (let w=0; w<cells.length/7; w++) {
+    html += '<div class="brief-cal-week">';
+    for (let i=0; i<7; i++) {
+      const d = cells[w*7+i];
+      if (d === null) { html += '<div class="brief-cal-day other-month"></div>'; continue; }
+      const ds = `${year}-${pad(month+1)}-${pad(d)}`;
+      const isToday = ds === todayStr();
+      const items = dayItems[ds] || [];
+      const cls = ['brief-cal-day'];
+      if (isToday) cls.push('today');
+      if (i === 0) cls.push('sunday');
+      if (i === 6) cls.push('saturday');
+      const shown = items.slice(0, MAX_ITEMS);
+      const extra = items.length - shown.length;
+      const itemsHtml = shown.map(it => `<div class="brief-cal-item ${it.type}" title="${it.title.replace(/"/g,'&quot;')}">${it.title}</div>`).join('')
+        + (extra > 0 ? `<div class="brief-cal-item more">+${extra}</div>` : '');
+      html += `<div class="${cls.join(' ')}"><span class="brief-cal-daynum">${d}</span>${itemsHtml}</div>`;
+    }
+    html += '</div>';
+  }
+  document.getElementById('brief-cal-grid').innerHTML = html;
 }
 
 function renderMonthlySales() {
@@ -1666,6 +2138,7 @@ function toggleGongguArchive(btn) {
 function archiveEvent(evId) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
   ev.archived = true;
+  ev.updatedAt = new Date().toISOString();
   closeGongguModal();
   save(); renderGonggu();
   toast(`"${ev.title}" 보관함으로 이동됨`);
@@ -1673,6 +2146,7 @@ function archiveEvent(evId) {
 function unarchiveEvent(evId) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
   ev.archived = false;
+  ev.updatedAt = new Date().toISOString();
   save(); renderGonggu();
   toast(`"${ev.title}" 복원됨`);
 }
@@ -1923,7 +2397,9 @@ function saveGongguEdit(evId) {
   if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) { toast('종료일을 확인해 주세요'); return; }
   if (endDate && endDate < startDate) { toast('종료일은 시작일보다 같거나 뒤여야 해요'); return; }
   ev.title = title; ev.vendorId = vendorId; ev.startDate = startDate; ev.endDate = endDate;
+  ev.updatedAt = new Date().toISOString();
   save();
+  pushEventUpdate(ev);
   renderGonggu(); renderCalendar(); renderEventBars(); renderToday();
   renderGongguDetail(evId);
   toast('이벤트가 수정되었습니다');
@@ -2116,13 +2592,15 @@ function saveEvEventEdit(evId, eeId) {
   ee.endDate     = document.getElementById(`ev-ee-end-${eeId}`).value.trim();
   ee.announceDate= document.getElementById(`ev-ee-announce-${eeId}`).value.trim();
   ee.url         = document.getElementById(`ev-ee-url-${eeId}`).value.trim();
+  let newAnnounceTask = null;
   if (ee.announceDate) {
     const alreadyHasTask = S.tasks.some(t => t.eventId === evId && t.content === `[이벤트 발표] ${ee.title}`);
     if (!alreadyHasTask) {
       const ev = S.events.find(e => e.id === evId);
-      S.tasks.push({ id: genId('t'), vendorId: ev ? ev.vendorId : '', eventId: evId,
+      newAnnounceTask = { id: genId('t'), vendorId: ev ? ev.vendorId : '', eventId: evId,
         content: `[이벤트 발표] ${ee.title}`, done: false, archived: false,
-        createdAt: todayStr(), dueDate: ee.announceDate, assignee: '채원', followUpFromCommId: '' });
+        createdAt: todayStr(), dueDate: ee.announceDate, assignee: '채원', followUpFromCommId: '' };
+      S.tasks.push(newAnnounceTask);
     }
   }
   save();
@@ -2461,7 +2939,8 @@ function confirmAddTask() {
   const dueDate  = document.getElementById('task-popup-date').value.trim() || null;
   const content  = _pendingTaskContent;
   if (!content) { toast('내용이 없습니다'); return; }
-  S.tasks.unshift({ id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:todayStr(), dueDate, followUpFromCommId:null, assignee });
+  const newTask = { id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:todayStr(), dueDate, followUpFromCommId:null, assignee };
+  S.tasks.unshift(newTask);
   save();
   closeTaskPopup();
   document.getElementById('task-content').value = '';
@@ -3107,10 +3586,12 @@ function saveCommEdit(id) {
 
 function deleteTask(id) {
   if (!confirm('이 할 일을 삭제할까요?')) return;
+  const t = S.tasks.find(t => t.id === id);
   S.tasks = S.tasks.filter(t => t.id !== id);
   save(); renderTaskList(); renderToday(); renderEventBars();
   if (doneOpen) renderDoneList();
   if (selectedGongguId) renderGongguDetail(selectedGongguId);
+  if (t && t.googleEventId) pushEventDelete(t.googleEventId);
   toast('삭제되었습니다');
 }
 
@@ -3168,16 +3649,20 @@ function saveEventEdit(id) {
   if (endDate && endDate < startDate) { toast('종료 날짜는 시작 날짜보다 같거나 뒤여야 해요'); return; }
   if (!title) { toast('일정 제목을 입력해 주세요'); return; }
   ev.startDate = startDate; ev.endDate = endDate; ev.title = title; ev.vendorId = vendorId;
+  ev.updatedAt = new Date().toISOString();
   save(); renderCalendar(); renderEventBars(); renderToday(); renderGonggu(); renderVendorHistory();
+  pushEventUpdate(ev);
   toast('일정이 수정되었습니다');
 }
 
 function deleteEvent(id) {
   if (!confirm('이 일정을 삭제할까요?')) return;
+  const ev = S.events.find(e => e.id === id);
   S.events = S.events.filter(e => e.id !== id);
   S.tasks.forEach(t => { if (t.eventId === id) t.eventId = null; });
   S.comms.forEach(c => { if (c.eventId === id) c.eventId = null; });
   save(); renderCalendar(); renderEventBars(); renderToday();
+  pushEventDelete(ev && ev.googleEventId);
   toast('일정이 삭제되었습니다');
 }
 
@@ -3232,6 +3717,7 @@ function renderHeaderDate() {
 async function init() {
   document.getElementById('loading-overlay').style.display = 'flex';
   await load();
+  initGoogleAuth();
   // 기존 done:true, archived:true 항목을 완료 목록으로 마이그레이션
   let migrated = false;
   S.tasks.forEach(t => { if (t.done && t.archived) { t.archived = false; if (!t.doneAt) t.doneAt = t.createdAt || todayStr(); migrated = true; } });
@@ -3261,6 +3747,8 @@ async function init() {
   renderVendorHistGrid();
   renderTaskList();
   renderCommVendors();
+  renderGcalSyncBar();
+  if (S.googleSync.calendarId) pullGoogleEvents(false);
 
   document.getElementById('btn-add-vendor').addEventListener('click', () => {
     const nameEl = document.getElementById('new-vendor-name');
@@ -3313,7 +3801,8 @@ function addGongguEvent() {
     S.vendors.push(vendor);
     refreshVendorSelects(); renderVendorHistory();
   }
-  S.events.push({ id: genId('evt'), vendorId: vendor.id, startDate, endDate, title });
+  const newEv = { id: genId('evt'), vendorId: vendor.id, startDate, endDate, title, updatedAt: new Date().toISOString() };
+  S.events.push(newEv);
   save();
   document.getElementById('gonggu-new-title').value = '';
   document.getElementById('gonggu-new-vendor').value = '';
@@ -3321,6 +3810,7 @@ function addGongguEvent() {
   document.getElementById('gonggu-new-end').value = '';
   document.getElementById('gonggu-new-detail').style.display = 'none';
   renderCalendar(); renderEventBars(); renderToday(); renderGonggu();
+  pushEventCreate(newEv);
   toast(isNew ? `"${vendorInput}" 공구사 등록 후 이벤트가 추가되었습니다` : '이벤트가 추가되었습니다');
 }
 </script>
