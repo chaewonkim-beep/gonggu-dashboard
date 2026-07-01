@@ -548,10 +548,6 @@ textarea { resize: vertical; min-height: 60px; }
       <div class="section-title">💬 소통 기록</div>
       <div style="font-size:12px;color:var(--text-light);margin:-8px 0 16px">공구사와 나눈 소통 내용을 기록하고 공구사별로 모아볼 수 있어요</div>
       <div class="comm-add-form">
-        <div style="margin-bottom:8px">
-          <textarea id="comm-raw-input" placeholder="📋 카카오톡·메일 대화를 붙여넣으면 AI가 요약해드려요 (선택)" style="width:100%;min-height:72px;resize:vertical;box-sizing:border-box;border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text-mid);background:var(--cream2);font-family:inherit" oninput="toggleAiBtn()"></textarea>
-          <button id="btn-ai-summarize" onclick="aiSummarizeComm()" style="display:none;margin-top:6px;width:100%;padding:8px;background:linear-gradient(135deg,#7B5C3E,#A07850);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.3px">✨ AI로 요약하기</button>
-        </div>
         <div style="display:flex;gap:8px;align-items:flex-start">
           <textarea id="comm-content" placeholder="💬 오늘의 소통 내용을 적어요" style="flex:1;min-height:60px;resize:vertical"></textarea>
           <button class="btn btn-primary" id="btn-add-comm" style="flex-shrink:0;align-self:flex-end">추가</button>
@@ -3326,53 +3322,6 @@ function addGongguEvent() {
   document.getElementById('gonggu-new-detail').style.display = 'none';
   renderCalendar(); renderEventBars(); renderToday(); renderGonggu();
   toast(isNew ? `"${vendorInput}" 공구사 등록 후 이벤트가 추가되었습니다` : '이벤트가 추가되었습니다');
-}
-
-// ══════════════ Gemini AI 요약 ══════════════
-const GEMINI_API_KEY = '';
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-
-function toggleAiBtn() {
-  const raw = document.getElementById('comm-raw-input').value.trim();
-  document.getElementById('btn-ai-summarize').style.display = raw ? 'block' : 'none';
-}
-
-async function callGemini(prompt) {
-  const body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] });
-  const res = await fetch(GEMINI_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
-    body
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `상태 코드 ${res.status}`);
-  }
-  return res.json();
-}
-
-async function aiSummarizeComm() {
-  const raw = document.getElementById('comm-raw-input').value.trim();
-  if (!raw) return;
-  const btn = document.getElementById('btn-ai-summarize');
-  btn.textContent = '⏳ 요약 중...';
-  btn.disabled = true;
-  try {
-    const prompt = `다음은 공구(공동구매) 관련 업무에서 공구사 담당자와 나눈 카카오톡 또는 이메일 대화입니다.\n아래 규칙에 따라 핵심 내용만 불릿 리스트로 정리해 주세요.\n\n규칙:\n- 각 항목은 "- "로 시작\n- 한 항목당 한 줄, 15자 이내로 간결하게\n- 결정된 내용, 전달 사항, 확인·요청 사항만 포함\n- 인사말, 감사 인사 등 불필요한 내용 제외\n- 번호 없이 불릿(-)만 사용\n- 4~6개 항목으로 정리\n\n---\n${raw}`;
-    const data = await callGemini(prompt);
-    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!summary) throw new Error('요약 결과를 받지 못했어요');
-    document.getElementById('comm-content').value = summary;
-    document.getElementById('comm-raw-input').value = '';
-    btn.style.display = 'none';
-    toast('AI 요약 완료! 내용을 확인 후 추가해 주세요');
-  } catch (e) {
-    toast('요약 실패: ' + e.message);
-    console.error('[Gemini 오류]', e);
-  } finally {
-    btn.textContent = '✨ AI로 요약하기';
-    btn.disabled = false;
-  }
 }
 </script>
 </body>
