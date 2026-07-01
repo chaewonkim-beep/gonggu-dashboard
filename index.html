@@ -181,18 +181,21 @@ textarea { resize: vertical; min-height: 60px; }
 
 /* ─── 브리핑 탭 통합 캘린더 (일정+할일) ─── */
 .brief-cal-week { display:flex; margin-bottom:2px }
-.brief-cal-dow { flex:1; text-align:center; font-size:11px; font-weight:600; color:var(--text-light); padding:4px 0 }
-.brief-cal-day { flex:1; min-width:0; min-height:56px; padding:3px 2px; border-radius:6px; font-size:11px; color:var(--text-dark); box-sizing:border-box }
-.brief-cal-day:hover { background: var(--cream2) }
-.brief-cal-day.other-month { color: var(--text-light); opacity:0.5 }
-.brief-cal-day.today .brief-cal-daynum { background: var(--yellow); color: var(--brown); font-weight:700; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px }
-.brief-cal-day.sunday .brief-cal-daynum { color: var(--red) }
-.brief-cal-day.saturday .brief-cal-daynum { color: #5080C0 }
-.brief-cal-daynum { font-size:11px; display:block; text-align:center; margin-bottom:2px }
 .brief-cal-item { font-size:9px; line-height:1.3; padding:1px 3px; border-radius:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; color:#fff; cursor:default }
-.brief-cal-item.event { background: var(--orange) }
-.brief-cal-item.task  { background: var(--brown) }
-.brief-cal-item.more  { background:none; color:var(--text-light); text-align:center }
+.brief-cal-dow { flex:1; text-align:center; font-size:12px; font-weight:600; color:var(--text-light); padding:4px 0 }
+.brief-cal-week-grid { display:grid; grid-template-columns:repeat(7,1fr); column-gap:2px; row-gap:3px; margin-bottom:4px }
+.brief-cal-daynum-cell { text-align:center; font-size:13px; color:var(--text-dark) }
+.brief-cal-daynum-cell.other-month { color: var(--text-light); opacity:0.5 }
+.brief-cal-daynum-cell.sunday { color: var(--red) }
+.brief-cal-daynum-cell.saturday { color: #5080C0 }
+.brief-cal-daynum { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50% }
+.brief-cal-daynum-cell.today .brief-cal-daynum { background: var(--yellow); color: var(--brown); font-weight:700 }
+.brief-cal-bar { font-size:11px; line-height:24px; padding:0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; background: var(--orange); opacity:0.8; cursor:default }
+.brief-cal-bar.start { border-top-left-radius:7px; border-bottom-left-radius:7px }
+.brief-cal-bar.end   { border-top-right-radius:7px; border-bottom-right-radius:7px }
+.brief-cal-task-chip { font-size:11px; line-height:24px; padding:0 5px; border-radius:3px; background: var(--brown); color:#fff; opacity:0.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:default }
+.brief-cal-task-more { font-size:10px; line-height:20px; text-align:center; color:var(--text-light); cursor:pointer }
+.brief-cal-task-more:hover { color:var(--brown); font-weight:600 }
 .brief-legend { display:flex; gap:14px; margin-top:8px; font-size:11px; color:var(--text-light); align-items:center }
 .brief-legend .brief-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px }
 .brief-dot-event { background: var(--orange) }
@@ -462,7 +465,11 @@ textarea { resize: vertical; min-height: 60px; }
       <div id="today-gonggu-bar"></div>
       <div id="today-gonggu-dropdown" style="display:none;margin-bottom:20px"></div>
       <div class="calendar-card" style="margin-bottom:20px">
-        <div id="brief-cal-label" class="cal-month" style="margin-bottom:8px"></div>
+        <div class="cal-header" style="margin-bottom:8px">
+          <button id="brief-cal-prev">‹</button>
+          <div id="brief-cal-label" class="cal-month"></div>
+          <button id="brief-cal-next">›</button>
+        </div>
         <div class="cal-grid" id="brief-cal-grid"></div>
         <div class="brief-legend">
           <span><span class="brief-dot brief-dot-event"></span>공구 일정</span>
@@ -1064,8 +1071,15 @@ function migrateGoogleSync() {
     updatedAt:     e.updatedAt ?? null,
   }));
 }
-function save() {
-  // 로컬 캐시 즉시 저장
+const SAVE_KEY_MAP = {
+  vendors: 'vendors', events: 'events', tasks: 'tasks', comms: 'comms',
+  progress: 'progress', evtProgress: 'evt_progress', insta: 'insta', googleSync: 'google_sync',
+};
+// keys: 실제로 바뀐 S의 필드명 배열(예: ['events']). 생략하면 8개 전체를 저장(마이그레이션 등 예외적인 경우에만 사용).
+// 무관한 컬렉션끼리 서로 덮어써서 생기는 사고(2026-07-01 밤 데이터 유실 사고)를 막기 위해,
+// 일반 CRUD 함수는 항상 자신이 실제로 바꾼 키만 명시적으로 넘겨야 한다.
+function save(keys) {
+  // 로컬 캐시는 항상 전체 저장 (충돌 위험 없고 빠름)
   localStorage.setItem('gg2_vendors',      JSON.stringify(S.vendors));
   localStorage.setItem('gg2_events',       JSON.stringify(S.events));
   localStorage.setItem('gg2_tasks',        JSON.stringify(S.tasks));
@@ -1074,17 +1088,10 @@ function save() {
   localStorage.setItem('gg2_evt_progress', JSON.stringify(S.evtProgress));
   localStorage.setItem('gg2_insta',        JSON.stringify(S.insta));
   localStorage.setItem('gg2_google_sync',  JSON.stringify(S.googleSync));
-  // Supabase 백그라운드 저장
-  sb.from('gg_store').upsert([
-    { key: 'vendors',      value: S.vendors },
-    { key: 'events',       value: S.events },
-    { key: 'tasks',        value: S.tasks },
-    { key: 'comms',        value: S.comms },
-    { key: 'progress',     value: S.progress },
-    { key: 'evt_progress', value: S.evtProgress },
-    { key: 'insta',        value: S.insta },
-    { key: 'google_sync',  value: S.googleSync },
-  ]).then(({ error }) => { if (error) console.error('Supabase 저장 오류:', error); });
+  // Supabase는 지정된 키만 백그라운드 upsert
+  const targetKeys = keys || Object.keys(SAVE_KEY_MAP);
+  const rows = targetKeys.map(k => ({ key: SAVE_KEY_MAP[k], value: S[k] }));
+  sb.from('gg_store').upsert(rows).then(({ error }) => { if (error) console.error('Supabase 저장 오류:', error); });
 }
 
 // ══════════════ Google Calendar 양방향 동기화 ══════════════
@@ -1158,7 +1165,7 @@ async function connectGoogleCalendar() {
         const created = await createRes.json();
         S.googleSync.calendarId = created.id;
       }
-      save();
+      save(['googleSync']);
       // 최초 연동: 로컬의 미보관 이벤트를 전부 구글로 Push (할 일은 동기화하지 않음)
       for (const ev of S.events.filter(e => !e.archived)) {
         await pushEventCreate(ev);
@@ -1178,7 +1185,7 @@ async function connectGoogleCalendar() {
 
 function disconnectGoogleCalendar() {
   S.googleSync = JSON.parse(JSON.stringify(DEFAULT_GOOGLE_SYNC));
-  save();
+  save(['googleSync']);
   renderGcalSyncBar();
   toast('구글 캘린더 연동을 해제했어요');
 }
@@ -1218,7 +1225,7 @@ async function pushEventCreate(ev) {
     const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events`, { method: 'POST', body: JSON.stringify(body) });
     const data = await res.json();
     ev.googleEventId = data.id;
-    save();
+    save(['events']);
   } catch (e) { console.warn('Google Calendar push 실패(생성)', e); }
 }
 async function pushEventUpdate(ev) {
@@ -1249,7 +1256,7 @@ async function pullGoogleEvents(fullResync) {
       if (pageToken) params.set('pageToken', pageToken);
       const res = await gcalFetch(`https://www.googleapis.com/calendar/v3/calendars/${S.googleSync.calendarId}/events?${params}`);
       if (res.status === 410) { // syncToken 만료 → 전체 재동기화로 폴백
-        S.googleSync.syncToken = null; save();
+        S.googleSync.syncToken = null; save(['googleSync']);
         return pullGoogleEvents(true);
       }
       const data = await res.json();
@@ -1278,7 +1285,7 @@ async function pullGoogleEvents(fullResync) {
       pageToken = data.nextPageToken;
       if (data.nextSyncToken) S.googleSync.syncToken = data.nextSyncToken;
     } while (pageToken);
-    save();
+    save(['googleSync', 'events']);
     if (touched) { renderCalendar(); renderEventBars(); renderToday(); renderGonggu(); }
   } catch (e) { console.warn('Google Calendar pull 실패', e); }
 }
@@ -1443,7 +1450,7 @@ async function disableTaskCalendarSync() {
     } catch (e) { failed++; console.warn(e); }
     await sleep(300);
   }
-  save();
+  save(['tasks']);
   console.log(`할 일 캘린더 연동 해제: ${done}건 삭제, ${failed}건 실패`);
   toast(`할 일 ${done}건을 캘린더에서 제거했어요`);
 }
@@ -1712,60 +1719,141 @@ function renderToday() {
   renderTodayDateHeader();
   renderBriefCalendar();
   renderZone('zone-today-list', todayTasks, false);
-  renderZone('zone-week-list',  weekTasks, true);
+  renderWeekZoneByVendor(weekTasks);
   renderMonthlySales();
   renderTodayGongguBar();
 }
 
+function toggleTaskVendorGroup(btn) {
+  const isOpen = btn.nextElementSibling.classList.toggle('open');
+  btn.textContent = (isOpen ? '▼' : '▶') + btn.textContent.slice(1);
+}
+
+function renderWeekZoneByVendor(tasks) {
+  const el = document.getElementById('zone-week-list');
+  if (!tasks.length) { el.innerHTML = '<div class="empty-zone">🌿 남은 할 일이 없어요!</div>'; return; }
+
+  const groups = {}; // vendorId(or 'none') -> tasks[]
+  tasks.forEach(t => { const key = t.vendorId || 'none'; (groups[key] ||= []).push(t); });
+
+  const order = Object.keys(groups).sort((a,b) => groups[a][0].dueDate.localeCompare(groups[b][0].dueDate));
+
+  el.innerHTML = order.map(key => {
+    const groupTasks = groups[key];
+    const label = key === 'none' ? '미지정' : vendorName(key);
+    const itemsHtml = groupTasks.map(t => {
+      const ev = t.eventId ? eventById(t.eventId) : null;
+      return `
+      <div class="today-task-item">
+        <input type="checkbox" ${t.done?'checked':''} onchange="toggleTaskDone('${t.id}',this.checked)">
+        <div style="flex:1">
+          <div class="today-task-text ${t.done?'done':''}">${t.content}</div>
+          <div style="margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            ${ev?`<span style="font-size:11px;color:var(--text-light)">${ev.title}</span>`:''}
+            ${t.dueDate ? `<span style="font-size:11px;color:var(--text-light)">${fmtDate(t.dueDate)}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return `
+    <div class="task-vendor-group" style="margin-bottom:10px">
+      <button class="archive-toggle" onclick="toggleTaskVendorGroup(this)">▶ ${label} (${groupTasks.length})</button>
+      <div class="archive-list" style="margin-top:8px">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+let briefYear = TODAY.getFullYear(), briefMonth = TODAY.getMonth();
+const expandedTaskDays = new Set(); // 브리핑 캘린더에서 "더보기"로 펼쳐둔 날짜(ds) 목록
+
+function toggleTaskDayExpand(ds) {
+  if (expandedTaskDays.has(ds)) expandedTaskDays.delete(ds); else expandedTaskDays.add(ds);
+  renderBriefCalendar();
+}
+
 function renderBriefCalendar() {
-  const pad = n => String(n).padStart(2,'0');
-  const year = TODAY.getFullYear(), month = TODAY.getMonth();
+  const pad  = n => String(n).padStart(2,'0');
+  const dfmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const esc  = s => String(s).replace(/"/g,'&quot;');
+  const year = briefYear, month = briefMonth;
   document.getElementById('brief-cal-label').textContent = `${year}년 ${month+1}월`;
   const dows  = ['일','월','화','수','목','금','토'];
   const first = new Date(year, month, 1);
   const last  = new Date(year, month+1, 0);
 
-  // 날짜별 이벤트/할일 항목 맵
-  const dayItems = {}; // ds -> [{type:'event'|'task', title}]
-  S.events.filter(e => !e.archived).forEach(ev => {
-    const s = evStart(ev), en = evEnd(ev) || evStart(ev);
-    let cur = new Date(s + 'T00:00:00'), lastD = new Date(en + 'T00:00:00');
-    while (cur <= lastD) {
-      const ds = `${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`;
-      (dayItems[ds] ||= []).push({ type: 'event', title: ev.title });
-      cur.setDate(cur.getDate()+1);
-    }
-  });
-  S.tasks.filter(t => !t.done && !t.archived && t.dueDate).forEach(t => {
-    (dayItems[t.dueDate] ||= []).push({ type: 'task', title: t.content });
-  });
+  // 이번 달 그리드에 표시될 모든 날짜(이전/다음 달 패딩 포함)
+  const gridStart = new Date(first); gridStart.setDate(gridStart.getDate() - first.getDay());
+  const totalCells = Math.ceil((first.getDay() + last.getDate()) / 7) * 7;
+  const gridDates = [];
+  for (let i=0; i<totalCells; i++) { const d = new Date(gridStart); d.setDate(d.getDate()+i); gridDates.push(d); }
+
+  const events = S.events.filter(e => !e.archived).map(ev => ({ title: ev.title, start: evStart(ev), end: evEnd(ev) || evStart(ev) }));
+  const taskMap = {};
+  S.tasks.filter(t => !t.done && !t.archived && t.dueDate).forEach(t => { (taskMap[t.dueDate] ||= []).push(t.content); });
 
   let html = `<div class="brief-cal-week">${dows.map(d=>`<div class="brief-cal-dow">${d}</div>`).join('')}</div>`;
-  const cells = [];
-  for (let i=0; i<first.getDay(); i++) cells.push(null);
-  for (let d=1; d<=last.getDate(); d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
 
-  const MAX_ITEMS = 2;
-  for (let w=0; w<cells.length/7; w++) {
-    html += '<div class="brief-cal-week">';
-    for (let i=0; i<7; i++) {
-      const d = cells[w*7+i];
-      if (d === null) { html += '<div class="brief-cal-day other-month"></div>'; continue; }
-      const ds = `${year}-${pad(month+1)}-${pad(d)}`;
-      const isToday = ds === todayStr();
-      const items = dayItems[ds] || [];
-      const cls = ['brief-cal-day'];
-      if (isToday) cls.push('today');
+  const weekCount = totalCells / 7;
+  for (let w=0; w<weekCount; w++) {
+    const weekDates = gridDates.slice(w*7, w*7+7);
+    const weekStartStr = dfmt(weekDates[0]), weekEndStr = dfmt(weekDates[6]);
+
+    // 이 주와 겹치는 이벤트를 이 주 안에서의 컬럼 범위(0~6)로 클리핑
+    const bars = [];
+    events.forEach(ev => {
+      if (ev.end < weekStartStr || ev.start > weekEndStr) return;
+      const startCol = ev.start <= weekStartStr ? 0 : weekDates.findIndex(d => dfmt(d) === ev.start);
+      const endCol   = ev.end   >= weekEndStr   ? 6 : weekDates.findIndex(d => dfmt(d) === ev.end);
+      bars.push({ title: ev.title, startCol, endCol, isStart: ev.start >= weekStartStr, isEnd: ev.end <= weekEndStr });
+    });
+    // 겹치는 바는 서로 다른 lane(줄)에 배치
+    bars.sort((a,b) => a.startCol - b.startCol || (b.endCol-b.startCol) - (a.endCol-a.startCol));
+    const laneEnds = [];
+    bars.forEach(bar => {
+      let lane = laneEnds.findIndex(end => end < bar.startCol);
+      if (lane === -1) { lane = laneEnds.length; laneEnds.push(bar.endCol); } else { laneEnds[lane] = bar.endCol; }
+      bar.lane = lane;
+    });
+    const laneCount = laneEnds.length;
+
+    // 할일: 기본 2줄까지만 보여주고, 그 이상이면 "더보기" 줄을 추가(클릭 시 해당 날짜만 펼쳐짐)
+    const CAP = 2;
+    const dayTaskInfo = weekDates.map(d => {
+      const ds = dfmt(d);
+      const all = taskMap[ds] || [];
+      const expanded = expandedTaskDays.has(ds);
+      const shown = expanded ? all : all.slice(0, CAP);
+      return { ds, all, shown, expanded };
+    });
+    const maxTaskRows = Math.max(0, ...dayTaskInfo.map(info => info.shown.length + (info.all.length > info.shown.length || info.expanded && info.all.length > CAP ? 1 : 0)));
+
+    html += `<div class="brief-cal-week-grid" style="grid-template-rows:22px repeat(${laneCount},24px) repeat(${maxTaskRows},20px)">`;
+    weekDates.forEach((d, i) => {
+      const ds = dfmt(d);
+      const cls = ['brief-cal-daynum-cell'];
+      if (d.getMonth() !== month) cls.push('other-month');
+      if (ds === todayStr()) cls.push('today');
       if (i === 0) cls.push('sunday');
       if (i === 6) cls.push('saturday');
-      const shown = items.slice(0, MAX_ITEMS);
-      const extra = items.length - shown.length;
-      const itemsHtml = shown.map(it => `<div class="brief-cal-item ${it.type}" title="${it.title.replace(/"/g,'&quot;')}">${it.title}</div>`).join('')
-        + (extra > 0 ? `<div class="brief-cal-item more">+${extra}</div>` : '');
-      html += `<div class="${cls.join(' ')}"><span class="brief-cal-daynum">${d}</span>${itemsHtml}</div>`;
-    }
-    html += '</div>';
+      html += `<div class="${cls.join(' ')}" style="grid-column:${i+1};grid-row:1"><span class="brief-cal-daynum">${d.getDate()}</span></div>`;
+    });
+    bars.forEach(bar => {
+      const barCls = ['brief-cal-bar'];
+      if (bar.isStart) barCls.push('start');
+      if (bar.isEnd) barCls.push('end');
+      html += `<div class="${barCls.join(' ')}" style="grid-column:${bar.startCol+1} / ${bar.endCol+2};grid-row:${bar.lane+2}" title="${esc(bar.title)}">${bar.title}</div>`;
+    });
+    const taskRowStart = laneCount + 2;
+    dayTaskInfo.forEach((info, i) => {
+      info.shown.forEach((content, idx) => {
+        html += `<div class="brief-cal-task-chip" style="grid-column:${i+1};grid-row:${taskRowStart+idx}" title="${esc(content)}">${content}</div>`;
+      });
+      if (info.all.length > CAP) {
+        const label = info.expanded ? '접기' : `+${info.all.length - CAP} 더보기`;
+        html += `<div class="brief-cal-task-more" style="grid-column:${i+1};grid-row:${taskRowStart+info.shown.length}" onclick="toggleTaskDayExpand('${info.ds}')">${label}</div>`;
+      }
+    });
+    html += `</div>`;
   }
   document.getElementById('brief-cal-grid').innerHTML = html;
 }
@@ -1773,13 +1861,12 @@ function renderBriefCalendar() {
 function renderMonthlySales() {
   const el    = document.getElementById('zone-issue-list');
   const title = document.getElementById('zone-sales-title');
-  const now   = new Date();
-  const ym    = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const monthLabel = `${now.getMonth()+1}월 매출`;
+  const ym    = `${briefYear}-${String(briefMonth+1).padStart(2,'0')}`;
+  const monthLabel = `${briefMonth+1}월 매출`;
   title.textContent = monthLabel;
 
   const evs = S.events.filter(e => evStart(e).startsWith(ym) && !e.archived);
-  if (!evs.length) { el.innerHTML='<div class="empty-zone">이번 달 공구 없음</div>'; return; }
+  if (!evs.length) { el.innerHTML='<div class="empty-zone">해당 월 공구 없음</div>'; return; }
 
   let totalSales = 0, totalSettle = 0;
   const rows = evs.map(ev => {
@@ -1953,6 +2040,8 @@ function toggleEventLinks(btn, evId, type) {
 
 document.getElementById('cal-prev').addEventListener('click', ()=>{ if(--calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
 document.getElementById('cal-next').addEventListener('click', ()=>{ if(++calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
+document.getElementById('brief-cal-prev').addEventListener('click', ()=>{ if(--briefMonth<0){briefMonth=11;briefYear--;} renderBriefCalendar(); renderMonthlySales(); });
+document.getElementById('brief-cal-next').addEventListener('click', ()=>{ if(++briefMonth>11){briefMonth=0;briefYear++;} renderBriefCalendar(); renderMonthlySales(); });
 
 let _calPopupDate = null;
 
@@ -2140,14 +2229,14 @@ function archiveEvent(evId) {
   ev.archived = true;
   ev.updatedAt = new Date().toISOString();
   closeGongguModal();
-  save(); renderGonggu();
+  save(['events']); renderGonggu();
   toast(`"${ev.title}" 보관함으로 이동됨`);
 }
 function unarchiveEvent(evId) {
   const ev = S.events.find(e => e.id === evId); if (!ev) return;
   ev.archived = false;
   ev.updatedAt = new Date().toISOString();
-  save(); renderGonggu();
+  save(['events']); renderGonggu();
   toast(`"${ev.title}" 복원됨`);
 }
 
@@ -2398,7 +2487,7 @@ function saveGongguEdit(evId) {
   if (endDate && endDate < startDate) { toast('종료일은 시작일보다 같거나 뒤여야 해요'); return; }
   ev.title = title; ev.vendorId = vendorId; ev.startDate = startDate; ev.endDate = endDate;
   ev.updatedAt = new Date().toISOString();
-  save();
+  save(['events']);
   pushEventUpdate(ev);
   renderGonggu(); renderCalendar(); renderEventBars(); renderToday();
   renderGongguDetail(evId);
@@ -2495,7 +2584,7 @@ function addDailySalesRecord(evId) {
   if (!count && !sales) { toast('판매건수 또는 매출을 입력해 주세요'); return; }
   const prog = getEvProg(evId);
   prog.dailySales.push({ id: genId('ds'), date, count, sales, memo });
-  save();
+  save(['evtProgress']);
   if (countEl) countEl.value = '';
   if (salesEl) salesEl.value = '';
   if (memoEl)  memoEl.value  = '';
@@ -2506,7 +2595,7 @@ function addDailySalesRecord(evId) {
 function removeDailySalesRecord(evId, recordId) {
   const prog = getEvProg(evId);
   prog.dailySales = prog.dailySales.filter(r => r.id !== recordId);
-  save();
+  save(['evtProgress']);
   const listEl = document.getElementById('ev-daily-list-'+evId);
   if (listEl) listEl.innerHTML = renderDailySalesHtml(evId, prog.dailySales);
 }
@@ -2514,7 +2603,7 @@ function removeDailySalesRecord(evId, recordId) {
 function saveEvField(evId, field, value) {
   const prog = getEvProg(evId);
   prog[field] = value;
-  save();
+  save(['evtProgress']);
 }
 function evEventItemHtml(evId, ee) {
   const period = ee.startDate && ee.endDate ? `${ee.startDate} ~ ${ee.endDate}`
@@ -2569,7 +2658,7 @@ function addEvEvent(evId) {
   if (!title) { toast('이벤트명을 입력해 주세요'); return; }
   const prog = getEvProg(evId);
   prog.evEvents.push({ id: genId('ee'), title, content: '', startDate: '', endDate: '', announceDate: '', url: '' });
-  save();
+  save(['evtProgress']);
   refreshEvEventsList(evId, prog);
   document.getElementById('ev-ev-title-'+evId).value = '';
   toast('이벤트가 추가됐습니다. ✏️ 버튼으로 세부내용을 추가하세요');
@@ -2603,14 +2692,14 @@ function saveEvEventEdit(evId, eeId) {
       S.tasks.push(newAnnounceTask);
     }
   }
-  save();
+  save(newAnnounceTask ? ['evtProgress', 'tasks'] : ['evtProgress']);
   refreshEvEventsList(evId, prog);
   toast(ee.announceDate ? '저장됐습니다. 발표일 할 일도 생성됐어요!' : '저장됐습니다');
 }
 function removeEvEvent(evId, eeId) {
   const prog = getEvProg(evId);
   prog.evEvents = prog.evEvents.filter(e => e.id !== eeId);
-  save();
+  save(['evtProgress']);
   refreshEvEventsList(evId, prog);
 }
 function calcSettle(sales, commission) {
@@ -2628,7 +2717,7 @@ function updateSettlement(evId) {
   document.getElementById('ev-settle-'+evId).textContent = calcSettle(prog.sales, prog.commission);
   const barEl = document.getElementById('ev-sales-bar-'+evId);
   if (barEl) barEl.innerHTML = renderSalesBarHtml(prog);
-  save(); renderGonggu();
+  save(['evtProgress']); renderGonggu();
 }
 
 function addEvLink(evId) {
@@ -2639,17 +2728,22 @@ function addEvLink(evId) {
   if (!url)   { toast('URL을 입력해 주세요'); return; }
   const prog = getEvProg(evId);
   prog.links.push({ id: genId('lk'), title, desc, url });
-  save(); renderGongguDetail(evId); toast('링크가 추가되었습니다');
+  save(['evtProgress']); renderGongguDetail(evId); toast('링크가 추가되었습니다');
 }
 
 function removeEvLink(evId, linkId) {
   const prog = getEvProg(evId);
   prog.links = prog.links.filter(l => l.id !== linkId);
-  save(); renderGongguDetail(evId);
+  save(['evtProgress']); renderGongguDetail(evId);
 }
 
 function isCurrentMonthEvent(ev) {
   return ev && evStart(ev).slice(0,7) === todayStr().slice(0,7);
+}
+
+function stepTaskContent(ev, step) {
+  const name = vendorName(ev.vendorId).replace(/공구/g, '').replace(/\s+/g, ' ').trim();
+  return `${name} ${step}`;
 }
 
 function syncEvStepTasks(evId) {
@@ -2662,7 +2756,7 @@ function syncEvStepTasks(evId) {
     const dueDate = stepDueDate(ev, i);
     if (!prog.checked[i]) {
       if (!existing) {
-        S.tasks.push({ id:genId('t'), vendorId:ev.vendorId, eventId:evId, content:step, done:false, stepIdx:i, dueDate, createdAt:todayStr(), archived:false, followUpFromCommId:null, assignee:null });
+        S.tasks.push({ id:genId('t'), vendorId:ev.vendorId, eventId:evId, content:stepTaskContent(ev, step), done:false, stepIdx:i, dueDate, createdAt:todayStr(), archived:false, followUpFromCommId:null, assignee:null });
         changed = true;
       } else if (existing.done) {
         existing.done = false; existing.doneAt = null; changed = true;
@@ -2673,7 +2767,7 @@ function syncEvStepTasks(evId) {
       }
     }
   });
-  if (changed) { save(); renderTaskList(); renderToday(); if(doneOpen) renderDoneList(); }
+  if (changed) { save(['tasks']); renderTaskList(); renderToday(); if(doneOpen) renderDoneList(); }
 }
 
 function toggleEvStep(evId, idx, checked) {
@@ -2685,13 +2779,13 @@ function toggleEvStep(evId, idx, checked) {
     const dueDate = stepDueDate(ev, idx);
     if (!checked) {
       if (!existing) {
-        S.tasks.push({ id:genId('t'), vendorId:ev.vendorId, eventId:evId, content:PROGRESS_STEPS[idx], done:false, stepIdx:idx, dueDate, createdAt:todayStr(), archived:false, followUpFromCommId:null, assignee:null });
+        S.tasks.push({ id:genId('t'), vendorId:ev.vendorId, eventId:evId, content:stepTaskContent(ev, PROGRESS_STEPS[idx]), done:false, stepIdx:idx, dueDate, createdAt:todayStr(), archived:false, followUpFromCommId:null, assignee:null });
       } else { existing.done = false; existing.doneAt = null; }
     } else {
       if (existing) { existing.done = true; existing.doneAt = todayStr(); }
     }
   }
-  save(); renderGonggu(); renderGongguDetail(evId); renderToday();
+  save(['tasks', 'evtProgress']); renderGonggu(); renderGongguDetail(evId); renderToday();
   renderTaskList(); if(doneOpen) renderDoneList();
   if (_openGongguDropdown === evId) renderGongguDetailInline(evId, document.getElementById('today-gonggu-dropdown'));
 }
@@ -2850,7 +2944,7 @@ function saveVendorEdit(id) {
   v.contact       = document.getElementById('ve-contact-'+id).value.trim();
   v.contactPerson = document.getElementById('ve-person-'+id).value.trim();
   v.contactEmail  = document.getElementById('ve-email-'+id).value.trim();
-  save(); refreshVendorSelects(); renderVendorHistGrid(); renderVendorHistDetail(id);
+  save(['vendors']); refreshVendorSelects(); renderVendorHistGrid(); renderVendorHistDetail(id);
   toast(`"${v.name}" 정보가 저장되었습니다`);
 }
 
@@ -2887,7 +2981,7 @@ function deleteVendorPermanent(id) {
   selectedVendorHistId = null;
   const detail = document.getElementById('vendor-hist-detail');
   if (detail) detail.style.display = 'none';
-  save(); refreshVendorSelects(); renderVendorHistGrid(); renderGonggu(); renderToday(); renderTaskList(); renderCommVendors();
+  save(['vendors', 'events', 'tasks', 'comms', 'evtProgress', 'progress']); refreshVendorSelects(); renderVendorHistGrid(); renderGonggu(); renderToday(); renderTaskList(); renderCommVendors();
   toast(`"${v.name}" 영구 삭제됨`);
 }
 
@@ -2941,7 +3035,7 @@ function confirmAddTask() {
   if (!content) { toast('내용이 없습니다'); return; }
   const newTask = { id:genId('t'), vendorId, eventId, content, done:false, archived:false, isDefault:false, createdAt:todayStr(), dueDate, followUpFromCommId:null, assignee };
   S.tasks.unshift(newTask);
-  save();
+  save(['tasks']);
   closeTaskPopup();
   document.getElementById('task-content').value = '';
   renderTaskList(); renderToday(); renderEventBars();
@@ -3027,7 +3121,7 @@ function toggleTaskDone(id, checked) {
     const prog = getEvProg(t.eventId);
     prog.checked[t.stepIdx] = checked;
   }
-  save(); renderTaskList(); renderToday();
+  save(['tasks', 'evtProgress']); renderTaskList(); renderToday();
   if (doneOpen) renderDoneList();
   if (selectedGongguId) renderGongguDetail(selectedGongguId);
   if (_openGongguDropdown) renderGongguDetailInline(_openGongguDropdown, document.getElementById('today-gonggu-dropdown'));
@@ -3073,7 +3167,7 @@ function confirmAddInstaQuick() {
   const memo    = document.getElementById('insta-popup-memo').value.trim();
   const ev      = eventId ? S.events.find(e=>e.id===eventId) : null;
   S.insta.unshift({ id: genId('ig'), date: todayStr(), type: '피드', vendorId: ev ? ev.vendorId : '', eventId, url: _pendingInstaUrl, memo });
-  save();
+  save(['insta']);
   closeInstaPopup();
   document.getElementById('insta-quick-url').value = '';
   renderInstaEvents();
@@ -3192,7 +3286,7 @@ function addInstaPost(evId) {
   const memo = document.getElementById(`insta-ev-memo-${evId}`).value.trim();
   if (!date) { toast('날짜를 입력해 주세요'); return; }
   S.insta.unshift({ id: genId('ig'), date, type, vendorId: ev.vendorId, eventId: evId, url, memo });
-  save();
+  save(['insta']);
   document.getElementById(`insta-ev-url-${evId}`).value = '';
   document.getElementById(`insta-ev-memo-${evId}`).value = '';
   const postsEl = document.getElementById(`insta-ev-posts-${evId}`);
@@ -3206,7 +3300,7 @@ function deleteInstaPost(id) {
   if (!confirm('이 컨텐츠를 삭제할까요?')) return;
   const post = S.insta.find(p => p.id === id);
   S.insta = S.insta.filter(p => p.id !== id);
-  save();
+  save(['insta']);
   if (post && post.eventId) {
     const postsEl = document.getElementById(`insta-ev-posts-${post.eventId}`);
     const posts = S.insta.filter(p => p.eventId === post.eventId).sort((a,b) => b.date.localeCompare(a.date));
@@ -3397,7 +3491,7 @@ function confirmAddComm() {
   const content  = _pendingCommContent;
   if (!content) { toast('내용이 없습니다'); return; }
   S.comms.unshift({ id: genId('c'), vendorId, eventId, date: todayStr(), content, followUpTaskId: null });
-  save();
+  save(['comms']);
   closeCommPopup();
   document.getElementById('comm-content').value = '';
   renderCommFeed(); renderToday();
@@ -3548,7 +3642,7 @@ function saveTaskEdit(id) {
   t.dueDate  = dueDate;
   t.eventId  = eventId;
   t.assignee = assignee;
-  save(); renderTaskList(); renderToday(); renderEventBars();
+  save(['tasks']); renderTaskList(); renderToday(); renderEventBars();
   if (selectedGongguId) renderGongguDetail(selectedGongguId);
   toast('수정되었습니다');
 }
@@ -3580,7 +3674,7 @@ function saveCommEdit(id) {
   if (!content) { toast('내용을 입력해 주세요'); return; }
   c.content = content;
   c.date    = date || c.date;
-  save(); renderCommFeed(); renderToday();
+  save(['comms']); renderCommFeed(); renderToday();
   toast('수정되었습니다');
 }
 
@@ -3588,7 +3682,7 @@ function deleteTask(id) {
   if (!confirm('이 할 일을 삭제할까요?')) return;
   const t = S.tasks.find(t => t.id === id);
   S.tasks = S.tasks.filter(t => t.id !== id);
-  save(); renderTaskList(); renderToday(); renderEventBars();
+  save(['tasks']); renderTaskList(); renderToday(); renderEventBars();
   if (doneOpen) renderDoneList();
   if (selectedGongguId) renderGongguDetail(selectedGongguId);
   if (t && t.googleEventId) pushEventDelete(t.googleEventId);
@@ -3602,7 +3696,7 @@ function deleteComm(id) {
     S.tasks = S.tasks.filter(t => t.id !== comm.followUpTaskId);
   }
   S.comms = S.comms.filter(c => c.id !== id);
-  save(); renderCommFeed(); renderTaskList(); renderToday();
+  save(['comms', 'tasks']); renderCommFeed(); renderTaskList(); renderToday();
   toast('삭제되었습니다');
 }
 
@@ -3650,7 +3744,7 @@ function saveEventEdit(id) {
   if (!title) { toast('일정 제목을 입력해 주세요'); return; }
   ev.startDate = startDate; ev.endDate = endDate; ev.title = title; ev.vendorId = vendorId;
   ev.updatedAt = new Date().toISOString();
-  save(); renderCalendar(); renderEventBars(); renderToday(); renderGonggu(); renderVendorHistory();
+  save(['events']); renderCalendar(); renderEventBars(); renderToday(); renderGonggu(); renderVendorHistory();
   pushEventUpdate(ev);
   toast('일정이 수정되었습니다');
 }
@@ -3661,7 +3755,7 @@ function deleteEvent(id) {
   S.events = S.events.filter(e => e.id !== id);
   S.tasks.forEach(t => { if (t.eventId === id) t.eventId = null; });
   S.comms.forEach(c => { if (c.eventId === id) c.eventId = null; });
-  save(); renderCalendar(); renderEventBars(); renderToday();
+  save(['events', 'tasks', 'comms']); renderCalendar(); renderEventBars(); renderToday();
   pushEventDelete(ev && ev.googleEventId);
   toast('일정이 삭제되었습니다');
 }
@@ -3699,7 +3793,7 @@ function addEventFromPopup() {
   }
   const evTitle = `${vendorInput} ${title}`;
   S.events.push({ id: genId('evt'), vendorId: vendor.id, startDate, endDate, title: evTitle });
-  save();
+  save(['events', 'vendors']);
   closeCalPopup();
   renderCalendar(); renderEventBars(); renderToday(); renderGonggu();
   toast(isNew ? `"${vendorInput}" 공구사 등록 후 일정이 추가되었습니다` : '일정이 추가되었습니다');
@@ -3721,7 +3815,7 @@ async function init() {
   // 기존 done:true, archived:true 항목을 완료 목록으로 마이그레이션
   let migrated = false;
   S.tasks.forEach(t => { if (t.done && t.archived) { t.archived = false; if (!t.doneAt) t.doneAt = t.createdAt || todayStr(); migrated = true; } });
-  if (migrated) save();
+  if (migrated) save(['tasks']);
   // 진행단계 순서 변경 마이그레이션 (자료나눔↔공구오픈 스왑, 1회만)
   Object.keys(S.evtProgress).forEach(evId => {
     const p = S.evtProgress[evId];
@@ -3758,7 +3852,7 @@ async function init() {
     const id = genId('v');
     S.vendors.push({ id, name, paused: false });
     nameEl.value = '';
-    save(); refreshVendorSelects(); renderVendorHistGrid();
+    save(['vendors']); refreshVendorSelects(); renderVendorHistGrid();
     toast(`"${name}" 추가됨`);
   });
 }
@@ -3803,7 +3897,7 @@ function addGongguEvent() {
   }
   const newEv = { id: genId('evt'), vendorId: vendor.id, startDate, endDate, title, updatedAt: new Date().toISOString() };
   S.events.push(newEv);
-  save();
+  save(['events', 'vendors']);
   document.getElementById('gonggu-new-title').value = '';
   document.getElementById('gonggu-new-vendor').value = '';
   document.getElementById('gonggu-new-start').value = '';

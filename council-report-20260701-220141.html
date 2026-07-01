@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>LLM Council 판결 리포트 — 팀 도구 적합성</title>
+<style>
+  :root{
+    --bg:#14151a; --card:#1d1f27; --card2:#242630; --border:#2e3140;
+    --text:#e8e9ee; --text-mid:#a8abbd; --text-dim:#6b6e82;
+    --contrarian:#e05a4d; --firstprinciples:#4da3e0; --expansionist:#4dbf7a;
+    --outsider:#c98ee0; --executor:#e0b04d; --accent:#f0824d;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',-apple-system,sans-serif;margin:0;padding:32px 20px;line-height:1.65}
+  .wrap{max-width:880px;margin:0 auto}
+  header{margin-bottom:32px}
+  header .tag{display:inline-block;font-size:11px;letter-spacing:1px;color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:3px 10px;margin-bottom:14px}
+  h1{font-size:22px;margin:0 0 10px}
+  .question{font-size:16px;color:var(--text-mid);background:var(--card);border-left:3px solid var(--accent);padding:14px 18px;border-radius:6px}
+  .context{font-size:12px;color:var(--text-dim);margin-top:10px;background:var(--card2);padding:10px 14px;border-radius:6px}
+  h2{font-size:15px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin:36px 0 14px;border-bottom:1px solid var(--border);padding-bottom:8px}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:640px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--card);border-radius:10px;padding:16px 18px;border-top:3px solid var(--c)}
+  .card .name{font-weight:700;font-size:14px;margin-bottom:2px}
+  .card .q{font-size:11px;color:var(--text-dim);font-style:italic;margin-bottom:10px}
+  .card .body{font-size:13px;color:var(--text-mid)}
+  .card.contrarian{--c:var(--contrarian)} .card.contrarian .name{color:var(--contrarian)}
+  .card.firstprinciples{--c:var(--firstprinciples)} .card.firstprinciples .name{color:var(--firstprinciples)}
+  .card.expansionist{--c:var(--expansionist)} .card.expansionist .name{color:var(--expansionist)}
+  .card.outsider{--c:var(--outsider)} .card.outsider .name{color:var(--outsider)}
+  .card.executor{--c:var(--executor)} .card.executor .name{color:var(--executor)}
+  .review{background:var(--card2);border-radius:8px;padding:12px 16px;margin-bottom:10px;font-size:13px}
+  .review .rname{font-weight:700;font-size:12px;margin-bottom:6px}
+  .verdict{background:linear-gradient(155deg,#2a2440,#1d1f27);border:1px solid #443a66;border-radius:12px;padding:24px 26px;margin-top:16px}
+  .vsec{margin-bottom:20px}
+  .vsec:last-child{margin-bottom:0}
+  .vsec .vtitle{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+  .vsec .vbody{font-size:14px;color:var(--text)}
+  .vsec .vbody ul{margin:0;padding-left:18px}
+  .vsec .vbody li{margin-bottom:6px}
+  .recommend{background:rgba(240,130,77,0.12);border:1px solid var(--accent);border-radius:8px;padding:14px 16px;font-weight:500}
+  .first-action{background:rgba(77,191,122,0.12);border:1px solid var(--expansionist);border-radius:8px;padding:14px 16px}
+  .vote-badge{display:inline-block;font-size:10px;background:var(--firstprinciples);color:#0a1420;border-radius:10px;padding:2px 8px;margin-left:6px;font-weight:700}
+  footer{margin-top:40px;text-align:center;font-size:11px;color:var(--text-dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="tag">LLM COUNCIL VERDICT</div>
+    <h1>공구 대시보드 — 팀 업무관리 도구로 충분한가?</h1>
+    <div class="question">단일 HTML 파일 + Supabase(key-value 저장) + 클라이언트 사이드 Google Calendar OAuth 연동으로 구성된 이 대시보드가, 실사용자 1명을 넘어 여러 명이 함께 쓰는 팀 업무관리 도구로 확장하기에 충분한지 판단하라.</div>
+    <div class="context">배경: 오늘 밤 실사용자 1명이 탭 여러 개를 연 것만으로 전체 덮어쓰기 save() 구조 때문에 데이터가 두 번 유실됨 — 이벤트 통째 삭제, 할일 43개→4014개 폭증. 락/버전관리/인증 전무.</div>
+  </header>
+
+  <h2>1. 5인 자문위원 독립 분석</h2>
+  <div class="cards">
+    <div class="card contrarian">
+      <div class="name">Contrarian (반대론자)</div>
+      <div class="q">"What could fail?"</div>
+      <div class="body">전체 덮어쓰기 save()는 시한폭탄. 1명도 탭 여러 개로 데이터를 날렸는데 여러 명이면 상시 사고가 된다. 인증도 없어 링크만 있으면 누구나 전체 삭제 가능. 확장은 사고를 규모의 제곱으로 키우는 결정 — 즉시 중단해야 한다.</div>
+    </div>
+    <div class="card firstprinciples">
+      <div class="name">First Principles (제1원리)</div>
+      <div class="q">"What are we really solving?"</div>
+      <div class="body">"확장 가능한가"가 아니라 "지금 무너지고 있는가"를 물어야 한다. 1명 상태에서도 이미 두 번 유실됐다 — 확장성이 아니라 정합성 부재 문제. 쓰기 연산에 원자성이 있느냐가 본질이며, 지금 구조는 인원수와 무관하게 근본적으로 안전하지 않다.</div>
+    </div>
+    <div class="card expansionist">
+      <div class="name">Expansionist (확장론자)</div>
+      <div class="q">"What upside are we missing?"</div>
+      <div class="body">이 사고는 "지금이 확장 타이밍"이라는 신호다. 지금 백엔드(락·버전·부분업데이트)를 붙이면 공구사 전원이 공동편집하는 협업 허브, 나아가 벤더 포털형 SaaS로 피벗할 잠재력도 있다. 참사는 확장의 걸림돌이 아니라 우선순위를 확정해준 선물이다.</div>
+    </div>
+    <div class="card outsider">
+      <div class="name">Outsider (외부인)</div>
+      <div class="q">"Does this make sense to someone new?"</div>
+      <div class="body">링크만 알면 아무나 전체 데이터를 보고 쓸 수 있는 구조에서 "팀 도구"를 논하는 것 자체가 성립하지 않는다. 애초에 다인용으로 설계된 적 없는 개인용 스크립트다 — 이름표만 팀 대시보드, 실체는 1인 메모장이 우연히 웹에 뜬 것.</div>
+    </div>
+    <div class="card executor">
+      <div class="name">Executor (실행가)</div>
+      <div class="q">"What do you do Monday morning?"</div>
+      <div class="body">월요일 아침 할 일: save() 전체 덮어쓰기부터 뜯어고친다. 이미 두 번 불난 화재다. 최소한 낙관적 락만 넣어도 오늘 밤 사고는 안 터진다. 스키마 재설계·권한 시스템은 다음 주 이야기 — 지금은 인원 늘리기 전에 이 버그 하나만 막는다.</div>
+    </div>
+  </div>
+
+  <h2>2. 익명 상호검토에서 드러난 것</h2>
+  <div class="review">
+    <div class="rname" style="color:var(--contrarian)">Contrarian의 검토</div>
+    가장 강한 답변은 First Principles — "원자성이 있는가"로 프레임을 재정의한 것. <b>5명 모두 놓친 것: 할일이 43→4014로 폭증한 정확한 인과 메커니즘을 아무도 규명하지 않고 곧장 아키텍처 처방으로 건너뛰었다.</b>
+  </div>
+  <div class="review">
+    <div class="rname" style="color:var(--firstprinciples)">First Principles의 검토</div>
+    낙관적 락은 진단은 맞지만 단일 blob 구조 자체는 그대로 두는 임시봉합. <b>5명 모두 놓친 것: "왜 전체 상태를 하나의 key-value blob으로 저장했는가"라는 데이터 모델링 선택 자체 — 레코드 단위 전환 없이는 어떤 패치도 임시방편.</b>
+  </div>
+  <div class="review">
+    <div class="rname" style="color:var(--expansionist)">Expansionist의 검토</div>
+    자신의 답이 유일하게 사고를 로드맵으로 읽었다고 평가. <b>5명 모두 놓친 것: 공구사들이 정말 같은 레코드를 동시 편집해야 하는지 검증 없이 락/버전관리로만 수렴 — 공구사별 파티셔닝이면 락 없이도 충돌이 사라질 수 있다.</b>
+  </div>
+  <div class="review">
+    <div class="rname" style="color:var(--outsider)">Outsider의 검토</div>
+    신뢰가 0인 상태에서 SaaS 피벗을 논하는 건 위험 축소가 아니라 위험 증폭. <b>5명 모두 놓친 것: 예방(락·인증·버전)만 논하고 탐지·복구는 전무 — 백업/변경이력 없인 다음 유실은 조용히 묻힌다.</b>
+  </div>
+  <div class="review">
+    <div class="rname" style="color:var(--executor)">Executor의 검토</div>
+    최소 패치로 오늘 밤 사고를 멈추는 실행 순서가 가장 명확하다고 자평. <b>5명 모두 놓친 것: 락 넣기 전에 이미 손상된 데이터(할일 4014개)부터 백업·롤백해야 하는데 아무도 "복구"를 언급하지 않았다 — 고치기 전에 지혈부터.</b>
+  </div>
+
+  <h2>3. Council Verdict</h2>
+  <div class="verdict">
+    <div class="vsec">
+      <div class="vtitle">Where the Council Agrees</div>
+      <div class="vbody"><ul>
+        <li>현재 구조는 인원수와 무관하게 근본적으로 안전하지 않다 — 오늘 밤 1명만으로 이미 증명됨.</li>
+        <li>이것은 "확장성" 문제가 아니라 "쓰기 연산의 원자성·정합성" 문제다.</li>
+      </ul></div>
+    </div>
+    <div class="vsec">
+      <div class="vtitle">Where the Council Clashes</div>
+      <div class="vbody">즉시 봉합파(Contrarian·First Principles·Outsider·Executor, 4/5): 팀 확장은 논할 단계가 아니며 최소한의 원자성·백업부터. vs 투자 신호파(Expansionist, 1/5): 이 사고야말로 백엔드·권한·SaaS로 도약할 타이밍. peer review에서는 신뢰 0 상태의 확장론에 더 비판적이었다(Outsider: "위험 축소가 아니라 위험 증폭").</div>
+    </div>
+    <div class="vsec">
+      <div class="vtitle">Blind Spots the Council Caught</div>
+      <div class="vbody"><ul>
+        <li><b>(peer review 3/5 최고 평가)</b> 전체 앱 상태를 하나의 key-value blob으로 저장한 데이터 모델링 선택 자체가 문제 — 락/버전은 이 위의 임시방편일 뿐, 진짜 해법은 레코드 단위 저장구조 전환.</li>
+        <li>공구사들이 정말 같은 레코드를 동시 편집해야 하는지 검증 없이 락으로만 수렴 — 벤더별 파티셔닝으로 충돌 자체를 없앨 수 있는지 아무도 안 물음.</li>
+        <li>예방(락·인증·버전)만 논하고 탐지·복구는 전원이 빠뜨림 — 백업/변경이력 없이는 다음 유실을 인지조차 못 함.</li>
+        <li>43→4014 폭증의 정확한 인과 메커니즘 미규명 상태에서 곧장 아키텍처 처방으로 건너뜀.</li>
+      </ul></div>
+    </div>
+    <div class="vsec">
+      <div class="vtitle">The Recommendation</div>
+      <div class="vbody recommend">지금은 팀 도구로 확장할 단계가 아니다 — 이 점은 4/5가 옳다. 하지만 "낙관적 락만 넣고 끝"도 불충분하다(First Principles). 의장 판결: <b>① 오늘 백업·변경이력부터 마련(탐지·복구 공백 해소), ② `gg_store` 단일 blob → 레코드 단위 테이블로 재설계, ③ 그 다음 공구사별 파티셔닝으로 락 없이 충돌 회피 가능한지 검토, ④ 인증/권한은 레코드 단위 구조가 선 다음에.</b> Expansionist의 SaaS 피벗 방향은 틀리지 않았지만, 오늘 밤 두 번 데이터를 잃은 신뢰 0 상태에서 논할 단계는 아니다.</div>
+    </div>
+    <div class="vsec">
+      <div class="vtitle">The One Thing to Do First</div>
+      <div class="vbody first-action">오늘, 락이나 권한 코드를 짜기 전에 — 현재 Supabase `gg_store` 테이블 전체를 타임스탬프 찍힌 로컬 JSON으로 내보내는 스크립트를 만들고 매일 자동 실행되게 예약한다. "조용한 데이터 유실을 감지·롤백할 수단이 전무하다"는 가장 위험한 공백을 즉시 메운다.</div>
+    </div>
+  </div>
+
+  <footer>LLM Council · 5인 AI 자문위원 의사결정 · 2026-07-01 22:01</footer>
+</div>
+</body>
+</html>
